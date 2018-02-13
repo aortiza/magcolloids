@@ -203,7 +203,7 @@ class sim():
         run = st.Template(
             "\n## ---Run Commands--##\n"
             "timestep 	$tmstp \n" + 
-            "dump 	3 all custom $frmrt $out_name id type x y z mu mux muy muz\n" + 
+            "dump 	3 all custom $frmrt $out_name id type x y z mu mux muy muz fx fy fz\n" + 
             "thermo_style 	custom step atoms \n" + 
             "thermo 	100 \n" + 
             "run 	$runtm \n")
@@ -390,9 +390,9 @@ class sim():
         
         D_mean = np.mean(self.diffusion)
         
-        self.damp = D_mean*mass/(2*kb*self.temperature) # this is in 1/us
+        self.damp = D_mean*mass/(kb*self.temperature) # this is in 1/us
 
-        self.mass = (2*kb*self.temperature*self.damp)*1/self.diffusion # this is in picograms
+        self.mass = (kb*self.temperature*self.damp)*1/self.diffusion # this is in picograms
         
     def run(self):
         """This function runs an input script named filename in lammps. The input should be located in target_dir"""
