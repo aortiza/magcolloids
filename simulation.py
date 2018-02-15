@@ -133,7 +133,8 @@ class sim():
             "neighbor 4.0 nsq \n" +
             "pair_style lj/cut/dipole/cut $lj_cut $dpl_cut\n")
             #"pair_style lj/cut/dipole/cut\n")
-        preamble = preamble.substitute(x_bound = self.sim_parameters.space["boundary"][0],
+        preamble = preamble.substitute(
+                           x_bound = self.sim_parameters.space["boundary"][0],
                            y_bound = self.sim_parameters.space["boundary"][1],
                            z_bound = self.sim_parameters.space["boundary"][2],
                            lj_cut = self.field_parameters.lj_cutoff,
@@ -185,17 +186,34 @@ class sim():
         field = field.substitute(Bmag = self.field_mag_h,
                         omega = self.frequency*2*np.pi,
                         angle = self.angle)
-
+        
+        if any(self.sim_parameters.space["walls"]):
+            walls = "fix 	2 Atoms wall/lj126 "+"".join([
+            "%slo EDGE $lj_eps $lj_sgm  $cut %shi EDGE $lj_eps $lj_sgm  $cut "%(r,r)
+                if w else "" for (r,w) in zip(["x","y","z"],self.sim_parameters.space["walls"])])+" \n"
+        else: 
+            walls = ""
+                
+        if len(self.field_parameters.walls)==2:
+            walls_back = st.Template(
+                "fix 	2 Atoms wall/lj126 zlo $wall1 $lj_eps $lj_sgm  $cut zhi $wall2 $lj_eps $lj_sgm $cut \n")
+            walls_back = walls_back.substitute(
+                wall1 = self.field_parameters.walls[0],
+                wall2 = self.field_parameters.walls[1],
+                lj_eps = self.field_parameters.lj_parameters[0],
+                lj_sgm = self.particle_properties[0].radius*self.field_parameters.lj_parameters[1],
+                cut = self.particle_properties[0].radius*self.field_parameters.lj_cutoff)
+        else: 
+            walls_back = ""
+        
         fixes = st.Template(
             "fix 	1 Atoms bd $temp $damp $seed \n" + 
-            "fix 	2 Atoms wall/lj126 zlo $wall1 $lj_eps $lj_sgm  $cut zhi $wall2 $lj_eps $lj_sgm $cut \n" + 
+            walls_back + walls + 
             "fix 	3 Atoms setdipole v_fieldx v_fieldy v_fieldz \n")
         fixes = fixes.substitute(
             temp = self.temperature,
             damp = self.damp,
             seed = self.seed,
-            wall1 = self.field_parameters.walls[0],
-            wall2 = self.field_parameters.walls[1],
             lj_eps = self.field_parameters.lj_parameters[0],
             lj_sgm = self.particle_properties[0].radius*self.field_parameters.lj_parameters[1],
             cut = self.particle_properties[0].radius*self.field_parameters.lj_cutoff)

@@ -79,17 +79,18 @@ class field():
         magnitude (= 10mT)
         frequency (= 10Hz)
         angle (= 30º)
-        dipole_cutoff (= 200um)
-        lj_cutoff (=10um)
+        dipole_cutoff (= 30um)
+        lj_cutoff (=1 sigma)
+        self.lj_parameters = [1e-2,2**(-1/6)] #[pg um^2 us^-2,sigma]
         walls (=[-5um,5um])
         """
         self.magnitude = 10 #mT
         self.frequency = 10 #Hz
         self.angle = 30 #degrees
-        self.dipole_cutoff = 200 #um
-        self.lj_cutoff = 10 #um
-        self.lj_parameters = [1,1] #[pNum,um]
-        self.walls = [-5,5] #um
+        self.dipole_cutoff = 30 #um
+        self.lj_cutoff = 1 # sigma
+        self.lj_parameters = [1e-2,1/(2**(1/6))] #[pg um^2 us^-2,sigma]
+        self.walls = [] #um
         
         if 'magnitude' in kargs: self.magnitude = kargs['magnitude']
         if 'frequency' in kargs: self.frequency = kargs['frequency']
@@ -111,7 +112,7 @@ class sim():
             This is important to prevent overwriting experimetns
         """
         self.temperature = 300
-        self.space = {"region":[200,200,20],"boundary":["s","s","f"]}
+        self.space = {"region":[200,200,20],"boundary":["s","s","f"],"walls":[False,False,False]}
         self.file_name = "test"
         self.dir = ""
         self.stamp_time = False
@@ -124,3 +125,6 @@ class sim():
             
         if len(self.space["region"])==3:
             self.space["region"] = [p*s/2 for s in self.space["region"] for p in [-1,1]]
+            
+        if 'walls' not in self.space:
+            self.space["walls"]=[False,False,True]
