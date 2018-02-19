@@ -112,8 +112,10 @@ class sim():
         if self.input_file:
             raise Exception("Sorry. This will be a feature in the future, but it is not programmed yet")
         
+        if not os.path.exists(self.sim_parameters.dir_name):
+            os.makedirs(self.sim_parameters.dir_name)
         
-        self.base_name = os.path.join(self.sim_parameters.dir,self.sim_parameters.file_name)
+        self.base_name = os.path.join(self.sim_parameters.dir_name,self.sim_parameters.file_name)
         if self.sim_parameters.stamp_time:
             self.base_name = self.base_name + \
                 tm.strftime('_%Y_%m_%d_%H_%M_%S')
@@ -255,8 +257,7 @@ class sim():
         if self.sim_parameters.stamp_time:
             self.base_name = self.base_name + \
                 tm.strftime('_%Y_%m_%d_%H_%M_%S')
-        #self.seed = np.random.randint(1000000)
-        self.seed = 1
+        self.seed = np.random.randint(1000000)
                 
         self.interaction_script_name = self.base_name+'.lmpfieldin'
         self.interaction_output_name =  self.base_name+'.lmpfield'

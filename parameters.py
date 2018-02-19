@@ -114,13 +114,13 @@ class sim():
         self.temperature = 300
         self.space = {"region":[200,200,20],"boundary":["s","s","f"],"walls":[False,False,False]}
         self.file_name = "test"
-        self.dir = ""
+        self.dir_name = ""
         self.stamp_time = False
         
         if 'temperature' in kargs: self.temperature = kargs['temperature']
         if 'space' in kargs: self.space = kargs['space']
         if 'file_name' in kargs: self.file_name = kargs['file_name']
-        if 'dir' in kargs: self.dir = kargs['dir']
+        if 'dir_name' in kargs: self.dir_name = kargs['dir_name']
         if 'stamp_time' in kargs: self.stamp_time = kargs['stamp_time']
             
         if len(self.space["region"])==3:
