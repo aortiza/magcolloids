@@ -500,5 +500,5 @@ class trj_lazyread():
 #                accum = accum.append(entry)
         
         accum = accum.set_index(['frame','id'])
-        return accum.sortlevel()
+        return accum.sort_index(level='frame')
     
