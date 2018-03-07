@@ -6,7 +6,7 @@ import os
 import sys
 import pandas as pd
 import copy as cp
-
+import pickle
 class sim():
     def __init__(self,*pargs,**kargs):
         """
@@ -119,11 +119,12 @@ class sim():
         if self.sim_parameters.stamp_time:
             self.base_name = self.base_name + \
                 tm.strftime('_%Y_%m_%d_%H_%M_%S')
-        #self.seed = np.random.randint(1000000)
-        self.seed = 1
+        self.seed = np.random.randint(1000000)
+        #self.seed = 1
                 
         self.script_name = self.base_name+'.lmpin'
         self.output_name =  self.base_name+'.lammpstrj'
+        self.pickle_name =  self.base_name+'.p'
         
         self.unitconversions()
         
@@ -240,7 +241,8 @@ class sim():
         f.write(fixes)
         f.write(run)
         f.close
-    
+        pickle.dump(self,open(self.pickle_name, "wb" ))
+        
     def generate_interaction_series(self,start,n_points,end = [0,0,0]):
         """
         This method generates a lammps script with no thermostat, 

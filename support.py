@@ -18,21 +18,27 @@ def initial_setup(n_of_particles, packing = 0.3, height = 4, radius=1.4):
     area_region = area_particle/packing
 
     length_region = np.sqrt(area_region)
-    x_loc = np.linspace(-length_region/2+radius,length_region/2-radius,part_in_edge)
-    y_loc = np.linspace(-length_region/2+radius,length_region/2-radius,part_in_edge)
+    part_separation = length_region/part_in_edge
+    
+    x_loc = np.linspace(
+        -length_region/2+part_separation/2,
+        length_region/2-part_separation/2,part_in_edge)
+    y_loc = np.linspace(
+        -length_region/2+part_separation/2,
+        length_region/2-part_separation/2,part_in_edge)
 
     [X,Y] = np.meshgrid(x_loc,y_loc)
     Z = np.zeros(np.shape(X))
 
     initial_positions = np.array([[x,y,z] for (x,y,z) in zip(X.flatten(),Y.flatten(),Z.flatten())])
     
-    if np.mean(np.diff(x_loc))<2*radius:
+    if part_separation<2*radius:
         raise ValueError("packing is too high")
 
     region = [np.round(length_region),np.round(length_region),height]
     return region, initial_positions
 
-def animate_trj(trj,sim,ax=False):
+def animate_trj(trj,sim,ax=False, verb=False):
     from mpl_toolkits.axes_grid1 import make_axes_locatable
     
     idx = pd.IndexSlice
@@ -54,7 +60,7 @@ def animate_trj(trj,sim,ax=False):
     
     dt_data = np.round(1/(timestep*framerate)) # Data timestep in lammps_time
     dt_video = 1/framerate*1000 # video timestep in miliseconds
-    frames = runtime*framerate+1
+    frames = trj.index.get_level_values('frame').unique().values
     
     ax.set_xlim(region[0],region[1])
     ax.set_ylim(region[2],region[3])
@@ -80,21 +86,27 @@ def animate_trj(trj,sim,ax=False):
         return p,
 
     def animate(frame):
-
+        if verb:
+            print("frame[%u] is "%frame,frames[frame])
         for (part_id,particle) in enumerate(particles):
-            patches[part_id].center = (trj.loc[idx[frame*dt_data,particle],'x'],trj.loc[idx[frame*dt_data,particle],'y'])
+            patches[part_id].center = (
+                trj.loc[idx[frames[frame],particle],'x'],
+                trj.loc[idx[frames[frame],particle],'y'])
         p.set_paths(patches)
-        p.set_array(trj.loc[idx[frame*dt_data,:],'z'].values)
+        p.set_array(trj.loc[idx[frames[frame],:],'z'].values)
         ax.add_collection(p)
         return p,
-
+    
+    if verb: 
+        print("started animating")
+        print(frames)
+        
     anim = anm.FuncAnimation(fig, animate, init_func=init,
-                                   frames=int(frames), interval=dt_video, blit=True);
+                                   frames=len(frames), interval=dt_video, blit=True);
     plt.close(anim._fig)
 
     return anim
 
-    
 def draw_trj(trj,sim,iframe=-1,ax=False,):
     from mpl_toolkits.axes_grid1 import make_axes_locatable
     """ 
@@ -146,9 +158,26 @@ def display_animation_referenced(sim):
     HTML(video_html)
     return anim
 
-def display_animation_direct(sim):
-    trj = sim.load(read_trj=True)
-    anim = animate_trj(trj,sim)
+def export_animation(sim,*args,**kargs):
+    
+    if args:
+        trj = sim.load(read_trj=True)
+    else: 
+        trj = args[0]
+        
+    anim = animate_trj(trj,sim,kargs)
+    anim.save(sim.base_name+".gif",writer = "imagemagick")
+    return anim
+    
+def display_animation_direct(sim,*args,**kargs):
+
+    if len(args)<1:
+        trj = sim.load(read_trj=True)
+        print("reading"+args)
+    else: 
+        trj = args[0]
+
+    anim = animate_trj(trj,sim,kargs)
     return anim.to_html5_video()
 
 def draw_exp_phase_diagram(ax=False):
@@ -171,7 +200,7 @@ def draw_exp_phase_diagram(ax=False):
     ax.set(aspect=extent_ratio*img_ratio)
     
     ax.set_xlabel("Area Packing Fraction $\phi$")
-    ax.set_xlabel("height")
+    ax.set_ylabel("height")
     return ax
     
 ## Dimer Finding Functions 
@@ -202,6 +231,33 @@ def neighbors_within(distance,points,sim):
     # pair lists are really more useful as sets, which are not ordered. When comparing sets {a,b}=={b,a}.
     return  [set([i for i in pair]) for pair in pair_list]
     
+def nearest_neighbors(points,sim):
+    """ Calculates, through cKDTree, the nearest neighbors of each particle in a frame. 
+    """
+    
+    import scipy.spatial as spp
+    if any([bc=='p' for bc in sim.sim_parameters.space["boundary"]]):
+        
+        region = np.array(sim.sim_parameters.space['region'])
+        
+        # padding a region prevents particles to be consider dimers 
+        # when they are close to the boundary of a non periodic dimension
+        pad_region = [0 if bc=='p' else distance*2 for bc in sim.sim_parameters.space["boundary"]]
+        region[0::2] = region[0::2]-pad_region
+        region[1::2] = region[1::2]+pad_region
+        
+        tree = spp.cKDTree(
+            np.mod(
+                (points-region[0::2]), # Centers
+                region[1::2]-region[0::2]), # mod wraps particles outside the region
+            boxsize = region[1::2]-region[0::2]) # boxsize finds neighbors across the borders of a torus. 
+    else:
+        tree = spp.cKDTree(points) # everything is easier for closed boundaries
+
+    pair_list = list(tree.query())        
+    # pair lists are really more useful as sets, which are not ordered. When comparing sets {a,b}=={b,a}.
+    return  [set([i for i in pair]) for pair in pair_list]
+    
 def dimers(trj, sim, distance=False):
     """ This returns a database of dimers in frames"""
     
@@ -214,7 +270,12 @@ def dimers(trj, sim, distance=False):
     
     for i_frame,frame in enumerate(frames):
         points = trj.loc[idx[frame,:]].filter(("x","y","z")).values
+        p_id = trj.loc[idx[frame,:]].index.get_level_values('id').values
+        
         pair_list = neighbors_within(distance,points,sim)
+        # neighbors_within returns the location of the pair members. 
+        # we need to convert that into the id of the pair members.
+        pair_list = [{p_id[loc] for loc in pair} for pair in pair_list]
         
         if i_frame>0:
             # here I'll store the id's of dimers that I find. 
@@ -225,7 +286,7 @@ def dimers(trj, sim, distance=False):
             for i_pair,pair in enumerate(pair_list):
                 # Now, for each pair in the new frame
                 
-                pairs_0_id = pairs_in_frame[i_frame-1].index.values        
+                pairs_0_id = pairs_in_frame[i_frame-1].index.values
 
                 # "where" is the location of the pair in the previous array. 
                 # If the pair is not in the previous array, it returns an empty, which is fine (see later)
@@ -238,10 +299,14 @@ def dimers(trj, sim, distance=False):
                     # if where is empty, I assign a new id to the pair. I then update the newest pair id. 
                     pairs_index[i_pair] = new_pair_id
                     new_pair_id=new_pair_id+1
-            pairs_in_frame.append(pd.DataFrame({'members':pair_list},index = pairs_index))
+            pair_df = pd.DataFrame({'members':pair_list},index = pairs_index)
+            pair_df.index.name = 'id'
+            pairs_in_frame.append(pair_df)
 
         else: 
-            pairs_in_frame.append(pd.DataFrame({'members':pair_list}))
+            pair_df = pd.DataFrame({'members':pair_list})
+            pair_df.index.name = 'id'
+            pairs_in_frame.append(pair_df)
             new_pair_id = len(pair_list)
     
     
