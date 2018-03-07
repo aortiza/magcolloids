@@ -38,7 +38,20 @@ def initial_setup(n_of_particles, packing = 0.3, height = 4, radius=1.4):
     region = [np.round(length_region),np.round(length_region),height]
     return region, initial_positions
 
-def animate_trj(trj,sim,ax=False, verb=False):
+def animate_trj(trj,sim, ax=False, verb=False, start=0, end=False, step = 1, speedup = 1):
+    """
+    This function animates the trajectory resulting from a confined dimer simulation.
+    It displays the z direction as a colormap and the particles in the x and y direction. 
+    The simulation is required as argument to obtain parameters like the region size and the 
+    particles radius. 
+    Optional parameters are:
+    * ax: an axis object to use for creating the plot.
+    * start: start time of the simulation if not the whole time is required. The default is 0. 
+    * end: end time of the simulation. The default is the total simulation time.
+    * step = 1. The framerate, so to speak. 
+    * verb = False. If verb = True, the routine prints indicators that is running. 
+    * speedup allows us to do faster videos. Default is 1, which means normal ratio.
+    """
     from mpl_toolkits.axes_grid1 import make_axes_locatable
     
     idx = pd.IndexSlice
@@ -58,9 +71,22 @@ def animate_trj(trj,sim,ax=False, verb=False):
     
     lammps_time = 1e6;
     
-    dt_data = np.round(1/(timestep*framerate)) # Data timestep in lammps_time
-    dt_video = 1/framerate*1000 # video timestep in miliseconds
+    #dt_data = np.round(1/(timestep*framerate)) # Data timestep in lammps_time
+    
     frames = trj.index.get_level_values('frame').unique().values
+    
+    if not end:
+        end = frames[-1]*timestep
+    
+    frame_min=start/timestep
+    frame_max=end/timestep
+    
+    frame_id_min = np.where(frames>=frame_min)[0][0]
+    frame_id_max = np.where(frames<frame_max)[0][-1]
+    
+    trj = trj.loc[idx[frames[frame_id_min:frame_id_max:step],:]]
+    frames = trj.index.get_level_values('frame').unique().values
+    dt_video = np.mean(np.diff(frames))*sim.run_parameters.timestep*1000/speedup # video timestep in miliseconds
     
     ax.set_xlim(region[0],region[1])
     ax.set_ylim(region[2],region[3])
@@ -177,7 +203,7 @@ def display_animation_direct(sim,*args,**kargs):
     else: 
         trj = args[0]
 
-    anim = animate_trj(trj,sim,kargs)
+    anim = animate_trj(trj,sim,**kargs)
     return anim.to_html5_video()
 
 def draw_exp_phase_diagram(ax=False):
