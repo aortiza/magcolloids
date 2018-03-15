@@ -419,6 +419,8 @@ class sim():
         """This function runs an input script named filename in lammps. The input should be located in target_dir"""
         if sys.platform=='darwin':
             lmp_exec = "./lmp_mac"
+        elif sys.platform=='linux':
+            lmp_exec = "lmp_serial"
         else:
             lmp_exec = "lmp_mingw64.exe"
 
@@ -434,12 +436,16 @@ class sim():
                 trj['t']=trj.index.get_level_values('frame')*self.run_parameters.timestep
                 return trj
                               
-
+#from collections import Sequence
 class trj_lazyread():
     def __init__(self,Filename):
         self.T = dict([])
         self.Name = Filename
         item = dict([])
+        
+        self.columns=['frame']+['id','type','x','y','z','mu','mux','muy','muz','fx','fy','fz']
+        self.formats = ['i8']+['i8','i8','float32','float32','float32','float32','float32','float32','float32','float32','float32','float32']
+        
         with open(Filename) as d:
             line = "d"
             while line:
@@ -456,13 +462,17 @@ class trj_lazyread():
                 if 'ITEM: ATOMS' in line:
                     item["location"] = d.tell()
                     self.T[t] = cp.deepcopy(item)
-                
+     
+    def __getitem__(self, sliced):
+        return self.readtrj(sliced)
+                        
     def readframe(self,time):
+        
         Atoms = np.zeros(
             int(self.T[time]["atoms"]),
             dtype={
-                'names':['id','type','x','y','z','mu','mux','muy','muz','fx','fy','fz'],
-                'formats':['i8','i8','float32','float32','float32','float32','float32','float32','float32','float32','float32','float32']})
+                'names':self.columns[1:],
+                'formats':self.formats[1:]})
         j=0
         with open(self.Name) as d:
             d.seek(self.T[time]["location"])
@@ -484,10 +494,16 @@ class trj_lazyread():
                 Atoms['fz'][j] = linearray[11]
                 j=j+1;
         return Atoms
-    def readtrj(self):
-        
+    def readtrj(self,*args):
+        """reads a trj from the file and returns a pandas object. 
+        accepts as first argument a slice object, which allows to read subsets of the file"""
         columns=['frame']+list(self.readframe(list(self.T.keys())[0]).dtype.names)
+        
         frames = np.sort(np.array(list(self.T.keys())))
+        if len(args)>0:
+            frames = frames[args[0]]
+            if args[0].__class__.__name__!="slice":
+                frames=[frames]
 
         accum = pd.DataFrame(index=[],columns=columns)
 
