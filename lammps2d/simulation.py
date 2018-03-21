@@ -418,11 +418,11 @@ class sim():
     def run(self):
         """This function runs an input script named filename in lammps. The input should be located in target_dir"""
         if sys.platform=='darwin':
-            lmp_exec = "./lmp_mac"
+            lmp_exec = "./lammps-executables/lmp_mac"
         elif sys.platform=='linux':
-            lmp_exec = "lmp_serial"
+            lmp_exec = "./lammps-executables/lmp_serial"
         else:
-            lmp_exec = "lmp_mingw64.exe"
+            lmp_exec = "./lammps-executables/lmp_mingw64.exe"
 
         os.system(lmp_exec + " -in "+self.script_name)
     
