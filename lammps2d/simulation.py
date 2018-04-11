@@ -417,13 +417,18 @@ class sim():
         
     def run(self):
         """This function runs an input script named filename in lammps. The input should be located in target_dir"""
+        exec_paths = os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'lammps_executables'))
+        
+        print(os.path.join(exec_paths,"lmp_mingw64-native.exe"))
+        
         if sys.platform=='darwin':
-            lmp_exec = "./lammps-executables/lmp_mac"
+            lmp_exec = "./lmp_mac"
         elif sys.platform=='linux':
-            lmp_exec = "./lammps-executables/lmp_serial"
+            lmp_exec = "./lmp_serial"
         else:
-            lmp_exec = "./lammps-executables/lmp_mingw64.exe"
+            lmp_exec = os.path.join(exec_paths,"lmp_mingw64-native.exe")
 
+        print(lmp_exec)
         os.system(lmp_exec + " -in "+self.script_name)
     
     def load(self,**kargs):
