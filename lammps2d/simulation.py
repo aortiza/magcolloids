@@ -6,7 +6,11 @@ import os
 import sys
 import pandas as pd
 import copy as cp
-import pickle
+import jsonpickle
+
+import jsonpickle.ext.numpy as jsonpickle_numpy
+jsonpickle_numpy.register_handlers()
+
 class sim():
     def __init__(self,*pargs,**kargs):
         """
@@ -124,7 +128,7 @@ class sim():
                 
         self.script_name = self.base_name+'.lmpin'
         self.output_name =  self.base_name+'.lammpstrj'
-        self.pickle_name =  self.base_name+'.p'
+        self.pickle_name =  self.base_name+'.jp'
         
         self.unitconversions()
         
@@ -180,14 +184,15 @@ class sim():
         field = st.Template(
             "## ---Fixes---## \n" + 
             "variable Bmag atom $Bmag \n" + 
-            "variable omega atom $omega \n" + 
+            "variable freq atom $freq \n" + 
+            "variable omega atom v_freq*2e-6*PI \n" + 
             "variable theta atom $angle \n" + 
             "variable fieldx atom v_Bmag*sin(v_omega*time)*sin(v_theta) \n" + 
             "variable fieldy atom v_Bmag*cos(v_omega*time)*sin(v_theta) \n" + 
             "variable fieldz atom v_Bmag*cos(v_theta) \n\n")
         
         field = field.substitute(Bmag = self.field_mag_h,
-                        omega = self.frequency*2*np.pi,
+                        freq = self.frequency,
                         angle = self.angle)
         
         if any(self.sim_parameters.space["walls"]):
@@ -241,7 +246,10 @@ class sim():
         f.write(fixes)
         f.write(run)
         f.close
-        pickle.dump(self,open(self.pickle_name, "wb" ))
+        
+        pk = open(self.pickle_name,'w')
+        pk.write(jsonpickle.encode(self))
+        pk.close
         
     def generate_interaction_series(self,start,n_points,end = [0,0,0]):
         """
@@ -391,7 +399,7 @@ class sim():
         # now field parameters. 
         
         self.angle = self.field_parameters.angle/180*np.pi #radians
-        self.frequency = self.field_parameters.frequency*1e-6
+        self.frequency = self.field_parameters.frequency
         # (f 1/s)*(1e-6 s/us)*(ts us/step)
         permeability = 4e5*np.pi #pN/A^2
         self.field_mag_h = self.field_parameters.magnitude/permeability*1e9/2.99e8 #I don't know for sure.
@@ -419,8 +427,6 @@ class sim():
         """This function runs an input script named filename in lammps. The input should be located in target_dir"""
         exec_paths = os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'lammps_executables'))
         
-        print(os.path.join(exec_paths,"lmp_mingw64-native.exe"))
-        
         if sys.platform=='darwin':
             lmp_exec = "./lmp_mac"
         elif sys.platform=='linux':
@@ -428,7 +434,6 @@ class sim():
         else:
             lmp_exec = os.path.join(exec_paths,"lmp_mingw64-native.exe")
 
-        print(lmp_exec)
         os.system(lmp_exec + " -in "+self.script_name)
     
     def load(self,**kargs):
@@ -449,7 +454,7 @@ class trj_lazyread():
         item = dict([])
         
         self.columns=['frame']+['id','type','x','y','z','mu','mux','muy','muz','fx','fy','fz']
-        self.formats = ['i8']+['i8','i8','float32','float32','float32','float32','float32','float32','float32','float32','float32','float32']
+        self.formats = ['i8']+['i8','float32','float32','float32','float32','float32','float32','float32','float32','float32','float32','float32']
         
         with open(Filename) as d:
             line = "d"
