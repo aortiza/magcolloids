@@ -606,14 +606,11 @@ def lammpstrj_to_hdf5(name):
             return iterator
             
     lz_read = sim.trj_lazyread(name+'.lammpstrj')
-
+    store = pd.HDFStore(name+'.hd5',mode='w')
     for i,t in enumerate(tqdm_notebook(lz_read.T)):
+        
         trj = lz_read[i]
-        if i==0:
-            mode='w'
-        else:
-            mode='a'
-            
-        trj.to_hdf(name+'.hd5','trj',mode=mode,format='t')
+        store.append('trj',trj)
+        
         if not tqdm_installed:
             f.value += 1
