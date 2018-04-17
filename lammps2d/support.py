@@ -583,3 +583,37 @@ def nematic_order(dim,director=False):
         max_order = np.argmax(S)
         director = [np.cos(theta_0[max_order]),np.sin(theta_0[max_order])]
         return S[max_order], director
+        
+def lammpstrj_to_hdf5(name):
+    """
+    Converts the result of a simulation from lammpstrj to hdf5. 
+    name is the filename of the output file with no extension.
+    """
+    import lammps2d.simulation as sim
+    
+    try:
+        from tqdm import tqdm_notebook
+        tqdm_installed = True
+        
+    except:
+        from ipywidgets import FloatProgress
+        from IPython.display import display
+        
+        f = FloatProgress(min=0, max=len(lz_read.T))
+        display(f)
+        tqdm_installed = False
+        def tqdm_notebook(iterator):
+            return iterator
+            
+    lz_read = sim.trj_lazyread(name+'.lammpstrj')
+
+    for i,t in enumerate(tqdm_notebook(lz_read.T)):
+        trj = lz_read[i]
+        if i==0:
+            mode='w'
+        else:
+            mode='a'
+            
+        trj.to_hdf(name+'.hd5','trj',mode=mode,format='t')
+        if not tqdm_installed:
+            f.value += 1
