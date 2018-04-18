@@ -343,8 +343,9 @@ def dimers(trj, sim, distance=False):
             pairs_in_frame.append(pair_df)
             new_pair_id = len(pair_list)
     
-    
-    return pd.concat(pairs_in_frame,keys = frames).sort_index(level='frame')
+    dim = pd.concat(pairs_in_frame,keys = frames).sort_index(level='frame')
+    dim['t'] = dim.index.get_level_values('frame').values*sim.run_parameters.timestep
+    return dim
     
 def dimers_findpositions(dim,trj,sim):
     """
@@ -621,6 +622,8 @@ def lammpstrj_to_hdf5(name):
         
         if not tqdm_installed:
             f.value += 1
+    
+    store.close()
             
 def strict_dimers(dim):
     """ Marks those dimers that are not strict as non_strict. """
