@@ -288,6 +288,13 @@ def nearest_neighbors(points,sim):
 def dimers(trj, sim, distance=False):
     """ This returns a database of dimers in frames"""
     
+    try:
+        from tqdm import tqdm_notebook
+        tqdm_installed = True
+    except: 
+        def tqdm_notebook(iterator):
+            return iterator
+        
     if not distance:
         distance = 2*sim.particle_properties[0].radius
         
@@ -295,7 +302,7 @@ def dimers(trj, sim, distance=False):
     frames = trj.index.get_level_values('frame').unique()
     pairs_in_frame = []
     
-    for i_frame,frame in enumerate(frames):
+    for i_frame,frame in enumerate(tqdm_notebook(frames)):
         points = trj.loc[idx[frame,:]].filter(("x","y","z")).values
         p_id = trj.loc[idx[frame,:]].index.get_level_values('id').values
         
@@ -614,3 +621,34 @@ def lammpstrj_to_hdf5(name):
         
         if not tqdm_installed:
             f.value += 1
+            
+def strict_dimers(dim):
+    """ Marks those dimers that are not strict as non_strict. """
+    idx = pd.IndexSlice
+
+    frames = dim.index.get_level_values("frame").unique().values
+    dim_ids = dim.loc[idx[frames[::]]].index.get_level_values("id").unique().values
+
+    not_strict = np.array([],dtype=[("frame",'i'),("id",'f')])
+
+    for i,d_id in enumerate(dim_ids):
+        
+        members = dim.loc[idx[:,d_id],"members"].iloc[0]
+        
+        """ timespan is the set of frames where the dimer d_id exists""" 
+        timespan = dim.loc[idx[:,d_id],:].index.get_level_values("frame").unique().values
+        """ coexisting is an array of all the dimers that exist in the same timespan"""
+        coexisting = dim.loc[idx[tuple(timespan),np.delete(dim_ids,i)],"members"]
+        
+        third_neighbors = np.array([index for dimer,index in zip(coexisting,coexisting.index) 
+                                    if bool(dimer.intersection(members))],dtype=[("frame",'i'),("id",'f')])
+        
+        not_strict = np.append(not_strict,third_neighbors)
+
+    not_strict = pd.DataFrame(not_strict)
+    not_strict = not_strict.set_index(["frame","id"])
+
+    dim["strict"] = True
+    dim.loc[dim.index.intersection(not_strict.index),'strict']=False
+    
+    return dim
