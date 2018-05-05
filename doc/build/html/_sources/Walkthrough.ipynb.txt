@@ -14,7 +14,83 @@
     "The lammps2d module provides the class `sim`, which contains the simulation parameters.\n",
     "After a `sim` object is created, it can be used to generate a lammps input script, run it and read it's results. \n",
     "\n",
-    "The basic usage of the module consists of defining a `sim` object. The only required parameter for this is the "
+    "The basic usage of the module consists of defining a `sim` object."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import sys\n",
+    "import os\n",
+    "\n",
+    "sys.path.insert(0, '../../')\n",
+    "\n",
+    "import lammps2d as lmp\n",
+    "%reload_ext autoreload\n",
+    "%autoreload 2"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "The first step in creating a sim object is creating the initial conditions. To do this, the package provides the `particle` class. A `particle` object determines the parameters of an individual particle such as radius, drag or susceptibility."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "particle = lmp.particle(diffusion=0.07,temperature=300)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Within the support functions, we can find a function `initial_setup` that creates a region of a certain size, and a set of particles. This function is useful for setting the initial conditions of a system with a predetermined packing fraction. The resulting array can be directly input to the `copy` method to create many particles. "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 3,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "region, initial_conditions = lmp.initial_setup(150, packing = 0.3, height = 4, radius = 1.4)\n",
+    "particle_array = particle.copy(initial_conditions)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "The second thing we have to do is to create a field. For this we use an object of the `field` class. We also need a world class, which contains parameters such as temperature and cutoff."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 11,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "field = lmp.field(magnitude = 7, frequency = 10, angle = 15)\n",
+    "world = lmp.world(temperature = 300, \n",
+    "                  region=region, boundaries = ['p','p','f'], walls = [False,False,True],\n",
+    "                  dipole_cutoff = 20)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Finaly all the three objects, `particle_array`, `field`, and `world` should be used to create a simulation object. \n",
+    "This simulation object accepts the final set of parameters, such as the total time, the simulation type, the number of parallel cores, or the place where the simulation has to be saved. "
    ]
   },
   {

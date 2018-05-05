@@ -1,67 +1,143 @@
+import string as st
 class particle():
-    def __init__(self,position,**kargs):
+    """ A type of particle to be simulated
+    
+    Attributes:
+        position (default = [0,0,0])
+        radius (default = 4um)
+        susceptibility (default = 1)
+        drag (default 4e6 pN s/nm)
+    
+    Methods:
+    """
+    def __init__(self, position = [0,0,0], radius = 4,
+                susceptibility = 1, drag = 4e6, 
+                diffusion = None, temperature = None):
         """
-        Initializes a set of particle properties. Normally, for each particle we define a particle properties object. 
-        the required parameter is the initial position
-        the position has to be either the string "random" or a list of three numbers. 
-        It the position is specified as "random", the program requires also a space specified. 
-        
-        Other optional parameters are:
-            radius (default = 4um)
-            susceptibility (default = 1)
-            diffusion (default = 1um^2/s)
+        Initializes a single particle. 
+        This particle can then be coppied to the positions given by a vector.
+        The diffusion coefficient can be given instead o the drag.
+        In that case, the temperature is also needed to calculate the drag. 
         """
-        # defaults
-        self.radius = 1 #um
-        self.susceptibility = 0.1
-        self.diffusion = 1 #um^2/s
         
-        if (not isinstance(position, (str))) & (len(position)==3):
-            self.initial_position = [position[0],position[1],position[2]] #um
-        elif position.lower() == "random".lower():
-            if 'space' in kargs:
-                space = kargs['space']
-                if len(space['region'])==3:
-                    self.initial_position = [s*r-s/2 for s,r in zip(space['region'],np.random.rand(3))]
-                if len(space['region'])==6:
-                    size = space['region'][1::2]-space['region'][0::2]
-                    center = space['region'][1::2]+space['region'][0::2]/2
-                    self.initial_position = [s*r-s/2 for s,r in zip(size,np.random.rand(3))]
-                    self.initial_position = [r+c for s,r in zip(center,self.initial_position)]
-            else:
-                #If we expect a random starting position, we need Space to be defined. 
-                #that can be input either by introducing the sim_parameters or the space dictionary.
-                raise Exception("I can't place particles randomly if I don't know the coordinates of the space")
-        else:
-            raise Exception("This is an invalid value for the required argument position")
+        if diffusion:
+            
+            KbT = 4/300*temperature
+            drag = KbT/diffusion*1e-6 # pN nm / um^2*s (um/1nm)^2
+            
+        self.position = position
+        self.radius = radius
+        self.susceptibility = susceptibility
+        self.drag = drag
+            
+    def copy(self, positions):
+        """ Copies the atom to a list of atoms. 
+        The location of the atoms is given by the positions vector."""
         
-        if 'susceptibility' in kargs: self.susceptibility = kargs['susceptibility']
+        particle_list = [self for p in positions]
         
-        if 'diffusion' in kargs: self.diffusion = kargs['diffusion']
-        elif 'drag' in kargs: 
-            drag = kargs['drag'] #pN/(nm/s)
-            if 'temperature' in kargs:
-                temp = kargs['temperature']
-                KbT = 4/300*temp
-                self.diffusion = KbT/drag*1e-6 #pN nm / pN*(nm/s) = nm^2/s = 1e-6um^2/nm^2*nm^2/s = 1e-6*um^2/s
+        for i,part in enumerate(particle_list):
+            part.position = positions[i]
+            
+        return particle_list
+        
+    def create_string(self):
+        
+        self.atom_def = st.Template(
+            "create_atoms 1 single $x0 $y0 $z0").substitute(
+                x0=self.position[0],y0=self.position[1],z0=self.position[2])
+        
+        self.atom_prop = st.Template(
+            "set atom $id mass $mass susceptibility $susc diameter $diameter"
+            ).substitute(mass = "$mass", susc = self.susceptibility,
+            diameter=2*self.radius, id="$id")
+        
+
+class world():
+    def __init__(self, temperature = 300, region = [200,200,20],
+                boundaries = ["s","s","f"], walls=[False,False,True],
+                dipole_cutoff = None, lj_cutoff = 1, 
+                lj_parameters = [1e2,2**(-1/6)],**kargs):
+        """
+        Sets world parameters, like temperture region, dipole cutoff and such.
+        the lj and dipole parameters are in units of radius. 
+        
+        If the dipole_cutoff is not given, the program should calculate a default cutoff 
+                as the length when the field is reduced to a fraction of KbT. 
+                .. to do::
+        """
+        self.temperature = temperature
+        self.region = region
+        self.boundaries = boundaries
+        self.walls = walls
+        self.dipole_cutoff = dipole_cutoff #um
+        self.lj_cutoff = lj_cutoff # sigma
+        self.lj_parameters = lj_parameters #[pg um^2 us^-2,sigma]
+            
+        if len(self.region)==3:
+            self.region = [p*s/2 for s in self.region for p in [-1,1]]
+        
+        if dipole_cutoff:
+            if "field" in kargs:
+                pass
+                
+    def create_string(self):
+        
+        self.world_def = st.Template("""
+            units micro
+            atom_style hybrid sphere paramagnet
+            boundary $x_bound $y_bound $z_bound
+            neighbor 4.0 nsq
+            pair_style lj/cut/dipole/cut $lj_cut $dpl_cut
+            """)
+        self.world_def = self.region_def.substitute(
+                                x_bound = self.boundaries[0],
+                                y_bound = self.boundaries[1],
+                                z_bound = self.boundaries[2],
+                                lj_cut = self.lj_cutoff,
+                                dpl_cut = self.dipole_cutoff
+                                )
+        
+        
+        self.region_def = st.Template("""
+            region space block $spx1 $spx2 $spy1 $spy2 $spz1 $spz2 # this is in microns +
+            create_box 1 space
+            """)
+            
+        self.region_def = self.region_def.substitute(
+            spx1 = self.region[0],
+            spx2 = self.region[1],
+            spy1 = self.region[2],
+            spy2 = self.region[3],
+            spz1 = self.region[4],
+            spz2 = self.region[5])
+        
+        self.group_def = st.Template("""
+            group Atoms type 1
+            pair_coeff * * $lj_eps $lj_sgm $lj_cut $dp_cut 
+            """).substitute(
+                lj_eps=self.lj_parameters[0],
+                lj_sgm=self.lj_parameters[1],
+                lj_cut=,
+                dp_cut=
+                )
+        
+class field():
+    def __init__(self,magnitude = 10, frequency = 0, angle = 0):
+        """
+        Characteristics of the field that sets the dipole moment of superparamagnetic particles
+        It's normally a precessing field, 
+        but every parameter can accept a function as a string in the lammps standard.
+        """
+        self.magnitude = magnitude #mT
+        self.frequency = frequency #Hz
+        self.angle = angle #degrees
 
         
-        if 'radius' in kargs:
-            self.radius = kargs['radius']
-            if 'diameter' in kargs:
-                warn('You have too many particle size specifications')
-        elif 'diameter' in kargs:
-            self.radius = kargs['diameter']/2
-            if 'radius' in kargs:
-                warn('You have too many particle size specifications')
-
 class run():
-    def __init__(self,**kargs):
+    def __init__(self,timestep = 1e-3, framerate = 30, total_time = 60):
         """ 
-        Optional keyword parameters are:
-        timestep (default = 1e-3 sec)
-        framerate (default = 30 sec)
-        total_time (default = 60 sec)
+        This 
         """
         
         self.timestep = 1e-3 #s
@@ -71,35 +147,7 @@ class run():
         if 'timestep' in kargs: self.timestep = kargs['timestep']
         if 'framerate' in kargs: self.framerate = kargs['framerate']
         if 'total_time' in kargs: self.total_time = kargs['total_time']
-        
-class field():
-    def __init__(self,**kargs):
-        """
-        Optional keyword parameters are:
-        magnitude (= 10mT)
-        frequency (= 10Hz)
-        angle (= 30º)
-        dipole_cutoff (= 30um)
-        lj_cutoff (=1 sigma)
-        self.lj_parameters = [1e-2,2**(-1/6)] #[pg um^2 us^-2,sigma]
-        walls (=[-5um,5um])
-        """
-        self.magnitude = 10 #mT
-        self.frequency = 10 #Hz
-        self.angle = 30 #degrees
-        self.dipole_cutoff = 30 #um
-        self.lj_cutoff = 1 # sigma
-        self.lj_parameters = [1e-2,1/(2**(1/6))] #[pg um^2 us^-2,sigma]
-        self.walls = [] #um
-        
-        if 'magnitude' in kargs: self.magnitude = kargs['magnitude']
-        if 'frequency' in kargs: self.frequency = kargs['frequency']
-        if 'angle' in kargs: self.angle = kargs['angle']
-        if 'dipole_cutoff' in kargs: self.dipole_cutoff = kargs['dipole_cutoff']
-        if 'lj_cutoff' in kargs: self.lj_cutoff = kargs['lj_cutoff']
-        if 'lj_parameters' in kargs: self.lj_parameters = kargs['lj_parameters']
-        if 'walls' in kargs: self.walls = kargs['walls']
-        
+                
 class sim():
     def __init__(self,**kargs):
         """
@@ -111,8 +159,6 @@ class sim():
         stamp_time (=False) this parameter determines if the file_name is modified by a timestamp.
             This is important to prevent overwriting experimetns
         """
-        self.temperature = 300
-        self.space = {"region":[200,200,20],"boundary":["s","s","f"],"walls":[False,False,False]}
         self.file_name = "test"
         self.dir_name = ""
         self.stamp_time = False
@@ -123,8 +169,3 @@ class sim():
         if 'dir_name' in kargs: self.dir_name = kargs['dir_name']
         if 'stamp_time' in kargs: self.stamp_time = kargs['stamp_time']
             
-        if len(self.space["region"])==3:
-            self.space["region"] = [p*s/2 for s in self.space["region"] for p in [-1,1]]
-            
-        if 'walls' not in self.space:
-            self.space["walls"]=[False,False,True]

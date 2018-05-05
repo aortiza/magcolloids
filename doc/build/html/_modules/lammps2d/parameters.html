@@ -1,0 +1,196 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>lammps2d.parameters &#8212; confined-colloids v0.2.0 documentation</title>
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for lammps2d.parameters</h1><div class="highlight"><pre>
+<div class="viewcode-block" id="particle"><a class="viewcode-back" href="../../api.html#lammps2d.particle">[docs]</a><span></span><span class="k">class</span> <span class="nc">particle</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot; A type of particle to be simulated</span>
+<span class="sd">    </span>
+<span class="sd">    Attributes:</span>
+<span class="sd">        position (default = [0,0,0])</span>
+<span class="sd">        radius (default = 4um)</span>
+<span class="sd">        susceptibility (default = 1)</span>
+<span class="sd">        drag (default 4e6 pN s/nm)</span>
+<span class="sd">    </span>
+<span class="sd">    Methods:</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="particle.__init__"><a class="viewcode-back" href="../../api.html#lammps2d.particle.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">position</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span> <span class="n">radius</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span>
+                <span class="n">susceptibility</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">drag</span> <span class="o">=</span> <span class="mf">4e6</span><span class="p">,</span> 
+                <span class="n">diffusion</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">temperature</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initializes a single particle. </span>
+<span class="sd">        This particle can then be coppied to the positions given by a vector.</span>
+<span class="sd">        The diffusion coefficient can be given instead o the drag.</span>
+<span class="sd">        In that case, the temperature is also needed to calculate the drag. </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="k">if</span> <span class="n">diffusion</span><span class="p">:</span>
+            
+            <span class="n">KbT</span> <span class="o">=</span> <span class="mi">4</span><span class="o">/</span><span class="mi">300</span><span class="o">*</span><span class="n">temperature</span>
+            <span class="n">drag</span> <span class="o">=</span> <span class="n">KbT</span><span class="o">/</span><span class="n">diffusion</span><span class="o">*</span><span class="mf">1e-6</span> <span class="c1"># pN nm / um^2*s (um/1nm)^2</span>
+            
+        <span class="bp">self</span><span class="o">.</span><span class="n">position</span> <span class="o">=</span> <span class="n">position</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">radius</span> <span class="o">=</span> <span class="n">radius</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">susceptibility</span> <span class="o">=</span> <span class="n">susceptibility</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">drag</span> <span class="o">=</span> <span class="n">drag</span></div>
+        
+<div class="viewcode-block" id="particle.copy"><a class="viewcode-back" href="../../api.html#lammps2d.particle.copy">[docs]</a>    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">positions</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Copies the atom to a list of atoms. </span>
+<span class="sd">        The location of the atoms is given by the positions vector.&quot;&quot;&quot;</span>
+        
+        <span class="n">particle_list</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">positions</span><span class="p">]</span>
+        
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">part</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">particle_list</span><span class="p">):</span>
+            <span class="n">part</span><span class="o">.</span><span class="n">position</span> <span class="o">=</span> <span class="n">positions</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            
+        <span class="k">return</span> <span class="n">particle_list</span></div></div>
+        
+
+<div class="viewcode-block" id="world"><a class="viewcode-back" href="../../api.html#lammps2d.world">[docs]</a><span class="k">class</span> <span class="nc">world</span><span class="p">():</span>
+<div class="viewcode-block" id="world.__init__"><a class="viewcode-back" href="../../api.html#lammps2d.world.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">temperature</span> <span class="o">=</span> <span class="mi">300</span><span class="p">,</span> <span class="n">region</span> <span class="o">=</span> <span class="p">[</span><span class="mi">200</span><span class="p">,</span><span class="mi">200</span><span class="p">,</span><span class="mi">20</span><span class="p">],</span>
+                <span class="n">boundaries</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;s&quot;</span><span class="p">,</span><span class="s2">&quot;s&quot;</span><span class="p">,</span><span class="s2">&quot;f&quot;</span><span class="p">],</span> <span class="n">walls</span><span class="o">=</span><span class="p">[</span><span class="kc">False</span><span class="p">,</span><span class="kc">False</span><span class="p">,</span><span class="kc">True</span><span class="p">],</span>
+                <span class="n">dipole_cutoff</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">lj_cutoff</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> 
+                <span class="n">lj_parameters</span> <span class="o">=</span> <span class="p">[</span><span class="mf">1e2</span><span class="p">,</span><span class="mi">2</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="o">/</span><span class="mi">6</span><span class="p">)],</span><span class="o">**</span><span class="n">kargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Sets world parameters, like temperture region, dipole cutoff and such.</span>
+<span class="sd">        the lj and dipole parameters are in units of radius. </span>
+<span class="sd">        </span>
+<span class="sd">        If the dipole_cutoff is not given, the program should calculate a default cutoff </span>
+<span class="sd">                as the length when the field is reduced to a fraction of KbT. </span>
+<span class="sd">                .. to do::</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">temperature</span> <span class="o">=</span> <span class="n">temperature</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">region</span> <span class="o">=</span> <span class="n">region</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">boundaries</span> <span class="o">=</span> <span class="n">boundaries</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">walls</span> <span class="o">=</span> <span class="n">walls</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dipole_cutoff</span> <span class="o">=</span> <span class="n">dipole_cutoff</span> <span class="c1">#um</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lj_cutoff</span> <span class="o">=</span> <span class="n">lj_cutoff</span> <span class="c1"># sigma</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lj_parameters</span> <span class="o">=</span> <span class="n">lj_parameters</span> <span class="c1">#[pg um^2 us^-2,sigma]</span>
+            
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">region</span><span class="p">)</span><span class="o">==</span><span class="mi">3</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">region</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span><span class="o">*</span><span class="n">s</span><span class="o">/</span><span class="mi">2</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">region</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]]</span>
+        
+        <span class="k">if</span> <span class="n">dipole_cutoff</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s2">&quot;field&quot;</span> <span class="ow">in</span> <span class="n">kargs</span><span class="p">:</span> 
+                <span class="k">pass</span></div></div>
+        
+<div class="viewcode-block" id="field"><a class="viewcode-back" href="../../api.html#lammps2d.field">[docs]</a><span class="k">class</span> <span class="nc">field</span><span class="p">():</span>
+<div class="viewcode-block" id="field.__init__"><a class="viewcode-back" href="../../api.html#lammps2d.field.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">magnitude</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span> <span class="n">frequency</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">angle</span> <span class="o">=</span> <span class="mi">0</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Characteristics of the field that sets the dipole moment of superparamagnetic particles</span>
+<span class="sd">        It&#39;s normally a precessing field, </span>
+<span class="sd">        but every parameter can accept a function as a string in the lammps standard.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">magnitude</span> <span class="o">=</span> <span class="n">magnitude</span> <span class="c1">#mT</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">frequency</span> <span class="o">=</span> <span class="n">frequency</span> <span class="c1">#Hz</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">angle</span> <span class="o">=</span> <span class="n">angle</span> <span class="c1">#degrees</span></div></div>
+
+        
+<span class="k">class</span> <span class="nc">run</span><span class="p">():</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">timestep</span> <span class="o">=</span> <span class="mf">1e-3</span><span class="p">,</span> <span class="n">framerate</span> <span class="o">=</span> <span class="mi">30</span><span class="p">,</span> <span class="n">total_time</span> <span class="o">=</span> <span class="mi">60</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">        This </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">timestep</span> <span class="o">=</span> <span class="mf">1e-3</span> <span class="c1">#s</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">framerate</span> <span class="o">=</span> <span class="mi">30</span> <span class="c1">#s</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">total_time</span> <span class="o">=</span> <span class="mi">60</span> <span class="c1">#s</span>
+        
+        <span class="k">if</span> <span class="s1">&#39;timestep&#39;</span> <span class="ow">in</span> <span class="n">kargs</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">timestep</span> <span class="o">=</span> <span class="n">kargs</span><span class="p">[</span><span class="s1">&#39;timestep&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="s1">&#39;framerate&#39;</span> <span class="ow">in</span> <span class="n">kargs</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">framerate</span> <span class="o">=</span> <span class="n">kargs</span><span class="p">[</span><span class="s1">&#39;framerate&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="s1">&#39;total_time&#39;</span> <span class="ow">in</span> <span class="n">kargs</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_time</span> <span class="o">=</span> <span class="n">kargs</span><span class="p">[</span><span class="s1">&#39;total_time&#39;</span><span class="p">]</span>
+                
+<span class="k">class</span> <span class="nc">sim</span><span class="p">():</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">**</span><span class="n">kargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Optional keyword parameters are:</span>
+<span class="sd">        temperature (=300K)</span>
+<span class="sd">        space (={&quot;region&quot;:[200,200,20],&quot;boundary&quot;:[&quot;s&quot;,&quot;s&quot;,&quot;f&quot;]})</span>
+<span class="sd">        file_name (= test)</span>
+<span class="sd">        dir (=&quot;&quot;)</span>
+<span class="sd">        stamp_time (=False) this parameter determines if the file_name is modified by a timestamp.</span>
+<span class="sd">            This is important to prevent overwriting experimetns</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">file_name</span> <span class="o">=</span> <span class="s2">&quot;test&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dir_name</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stamp_time</span> <span class="o">=</span> <span class="kc">False</span>
+        
+        <span class="k">if</span> <span class="s1">&#39;temperature&#39;</span> <span class="ow">in</span> <span class="n">kargs</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">temperature</span> <span class="o">=</span> <span class="n">kargs</span><span class="p">[</span><span class="s1">&#39;temperature&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="s1">&#39;space&#39;</span> <span class="ow">in</span> <span class="n">kargs</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">space</span> <span class="o">=</span> <span class="n">kargs</span><span class="p">[</span><span class="s1">&#39;space&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="s1">&#39;file_name&#39;</span> <span class="ow">in</span> <span class="n">kargs</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">file_name</span> <span class="o">=</span> <span class="n">kargs</span><span class="p">[</span><span class="s1">&#39;file_name&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="s1">&#39;dir_name&#39;</span> <span class="ow">in</span> <span class="n">kargs</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">dir_name</span> <span class="o">=</span> <span class="n">kargs</span><span class="p">[</span><span class="s1">&#39;dir_name&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="s1">&#39;stamp_time&#39;</span> <span class="ow">in</span> <span class="n">kargs</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">stamp_time</span> <span class="o">=</span> <span class="n">kargs</span><span class="p">[</span><span class="s1">&#39;stamp_time&#39;</span><span class="p">]</span>
+            
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, Antonio Ortiz-Ambriz.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -16,7 +16,7 @@
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="prev" title="Is there a nematic dimer phase at \(\theta=0\)?" href="SampleScript.html" />
+    <link rel="prev" title="Walkthrough" href="Walkthrough.html" />
    
   <link rel="stylesheet" href="_static/custom.css" type="text/css" />
   
@@ -59,6 +59,37 @@ Optional parameters are:
 * speedup allows us to do faster videos. Default is 1, which means normal ratio.</p>
 </dd></dl>
 
+<dl class="class">
+<dt id="lammps2d.particle">
+<em class="property">class </em><code class="descclassname">lammps2d.</code><code class="descname">particle</code><span class="sig-paren">(</span><em>position=[0, 0, 0], radius=4, susceptibility=1, drag=4000000.0, diffusion=None, temperature=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/lammps2d/parameters.html#particle"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#lammps2d.particle" title="Permalink to this definition">¶</a></dt>
+<dd><p>A type of particle to be simulated</p>
+<dl class="docutils">
+<dt>Attributes:</dt>
+<dd>position (default = [0,0,0])
+radius (default = 4um)
+susceptibility (default = 1)
+drag (default 4e6 pN s/nm)</dd>
+</dl>
+<p>Methods:</p>
+<dl class="method">
+<dt id="lammps2d.particle.copy">
+<code class="descname">copy</code><span class="sig-paren">(</span><em>positions</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/lammps2d/parameters.html#particle.copy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#lammps2d.particle.copy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Copies the atom to a list of atoms. 
+The location of the atoms is given by the positions vector.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="lammps2d.field">
+<em class="property">class </em><code class="descclassname">lammps2d.</code><code class="descname">field</code><span class="sig-paren">(</span><em>magnitude=10</em>, <em>frequency=0</em>, <em>angle=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/lammps2d/parameters.html#field"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#lammps2d.field" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="class">
+<dt id="lammps2d.world">
+<em class="property">class </em><code class="descclassname">lammps2d.</code><code class="descname">world</code><span class="sig-paren">(</span><em>temperature=300, region=[200, 200, 20], boundaries=['s', 's', 'f'], walls=[False, False, True], dipole_cutoff=None, lj_cutoff=1, lj_parameters=[100.0, 0.8908987181403393], **kargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/lammps2d/parameters.html#world"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#lammps2d.world" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 </div>
 </div>
 
@@ -79,7 +110,7 @@ Optional parameters are:
 <h3>Related Topics</h3>
 <ul>
   <li><a href="index.html">Documentation overview</a><ul>
-      <li>Previous: <a href="SampleScript.html" title="previous chapter">Is there a nematic dimer phase at <span class="math notranslate">\(\theta=0\)</span>?</a></li>
+      <li>Previous: <a href="Walkthrough.html" title="previous chapter">Walkthrough</a></li>
   </ul></li>
 </ul>
 </div>

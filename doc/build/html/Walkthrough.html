@@ -32,13 +32,246 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="Walkthrough">
+  
+<style>
+/* CSS for nbsphinx extension */
+
+/* remove conflicting styling from Sphinx themes */
+div.nbinput,
+div.nbinput div.prompt,
+div.nbinput div.input_area,
+div.nbinput div[class*=highlight],
+div.nbinput div[class*=highlight] pre,
+div.nboutput,
+div.nbinput div.prompt,
+div.nbinput div.output_area,
+div.nboutput div[class*=highlight],
+div.nboutput div[class*=highlight] pre {
+    background: none;
+    border: none;
+    padding: 0 0;
+    margin: 0;
+    box-shadow: none;
+}
+
+/* avoid gaps between output lines */
+div.nboutput div[class*=highlight] pre {
+    line-height: normal;
+}
+
+/* input/output containers */
+div.nbinput,
+div.nboutput {
+    display: -webkit-flex;
+    display: flex;
+    align-items: flex-start;
+    margin: 0;
+    width: 100%;
+}
+@media (max-width: 540px) {
+    div.nbinput,
+    div.nboutput {
+        flex-direction: column;
+    }
+}
+
+/* input container */
+div.nbinput {
+    padding-top: 5px;
+}
+
+/* last container */
+div.nblast {
+    padding-bottom: 5px;
+}
+
+/* input prompt */
+div.nbinput div.prompt pre {
+    color: #303F9F;
+}
+
+/* output prompt */
+div.nboutput div.prompt pre {
+    color: #D84315;
+}
+
+/* all prompts */
+div.nbinput div.prompt,
+div.nboutput div.prompt {
+    min-width: 8ex;
+    padding-top: 0.4em;
+    padding-right: 0.4em;
+    text-align: right;
+    flex: 0;
+}
+@media (max-width: 540px) {
+    div.nbinput div.prompt,
+    div.nboutput div.prompt {
+        text-align: left;
+        padding: 0.4em;
+    }
+    div.nboutput div.prompt.empty {
+        padding: 0;
+    }
+}
+
+/* disable scrollbars on prompts */
+div.nbinput div.prompt pre,
+div.nboutput div.prompt pre {
+    overflow: hidden;
+}
+
+/* input/output area */
+div.nbinput div.input_area,
+div.nboutput div.output_area {
+    padding: 0.4em;
+    -webkit-flex: 1;
+    flex: 1;
+    overflow: auto;
+}
+@media (max-width: 540px) {
+    div.nbinput div.input_area,
+    div.nboutput div.output_area {
+        width: 100%;
+    }
+}
+
+/* input area */
+div.nbinput div.input_area {
+    border: 1px solid #cfcfcf;
+    border-radius: 2px;
+    background: #f7f7f7;
+}
+
+/* override MathJax center alignment in output cells */
+div.nboutput div[class*=MathJax] {
+    text-align: left !important;
+}
+
+/* override sphinx.ext.pngmath center alignment in output cells */
+div.nboutput div.math p {
+    text-align: left;
+}
+
+/* standard error */
+div.nboutput div.output_area.stderr {
+    background: #fdd;
+}
+
+/* ANSI colors */
+.ansi-black-fg { color: #3E424D; }
+.ansi-black-bg { background-color: #3E424D; }
+.ansi-black-intense-fg { color: #282C36; }
+.ansi-black-intense-bg { background-color: #282C36; }
+.ansi-red-fg { color: #E75C58; }
+.ansi-red-bg { background-color: #E75C58; }
+.ansi-red-intense-fg { color: #B22B31; }
+.ansi-red-intense-bg { background-color: #B22B31; }
+.ansi-green-fg { color: #00A250; }
+.ansi-green-bg { background-color: #00A250; }
+.ansi-green-intense-fg { color: #007427; }
+.ansi-green-intense-bg { background-color: #007427; }
+.ansi-yellow-fg { color: #DDB62B; }
+.ansi-yellow-bg { background-color: #DDB62B; }
+.ansi-yellow-intense-fg { color: #B27D12; }
+.ansi-yellow-intense-bg { background-color: #B27D12; }
+.ansi-blue-fg { color: #208FFB; }
+.ansi-blue-bg { background-color: #208FFB; }
+.ansi-blue-intense-fg { color: #0065CA; }
+.ansi-blue-intense-bg { background-color: #0065CA; }
+.ansi-magenta-fg { color: #D160C4; }
+.ansi-magenta-bg { background-color: #D160C4; }
+.ansi-magenta-intense-fg { color: #A03196; }
+.ansi-magenta-intense-bg { background-color: #A03196; }
+.ansi-cyan-fg { color: #60C6C8; }
+.ansi-cyan-bg { background-color: #60C6C8; }
+.ansi-cyan-intense-fg { color: #258F8F; }
+.ansi-cyan-intense-bg { background-color: #258F8F; }
+.ansi-white-fg { color: #C5C1B4; }
+.ansi-white-bg { background-color: #C5C1B4; }
+.ansi-white-intense-fg { color: #A1A6B2; }
+.ansi-white-intense-bg { background-color: #A1A6B2; }
+
+.ansi-default-inverse-fg { color: #FFFFFF; }
+.ansi-default-inverse-bg { background-color: #000000; }
+
+.ansi-bold { font-weight: bold; }
+.ansi-underline { text-decoration: underline; }
+</style>
+<div class="section" id="Walkthrough">
 <h1>Walkthrough<a class="headerlink" href="#Walkthrough" title="Permalink to this headline">¶</a></h1>
 <p>The lammps2d module provides the class <code class="docutils literal notranslate"><span class="pre">sim</span></code>, which contains the
 simulation parameters. After a <code class="docutils literal notranslate"><span class="pre">sim</span></code> object is created, it can be used
 to generate a lammps input script, run it and read it’s results.</p>
-<p>The basic usage of the module consists of defining a <code class="docutils literal notranslate"><span class="pre">sim</span></code> object. The
-only required parameter for this is the</p>
+<p>The basic usage of the module consists of defining a <code class="docutils literal notranslate"><span class="pre">sim</span></code> object.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
+<span></span>In [1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">os</span>
+
+<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;../../&#39;</span><span class="p">)</span>
+
+<span class="kn">import</span> <span class="nn">lammps2d</span> <span class="k">as</span> <span class="nn">lmp</span>
+<span class="o">%</span><span class="k">reload_ext</span> autoreload
+<span class="o">%</span><span class="k">autoreload</span> 2
+</pre></div>
+</div>
+</div>
+<p>The first step in creating a sim object is creating the initial
+conditions. To do this, the package provides the <code class="docutils literal notranslate"><span class="pre">particle</span></code> class. A
+<code class="docutils literal notranslate"><span class="pre">particle</span></code> object determines the parameters of an individual particle
+such as radius, drag or susceptibility.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
+<span></span>In [2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">particle</span> <span class="o">=</span> <span class="n">lmp</span><span class="o">.</span><span class="n">particle</span><span class="p">(</span><span class="n">diffusion</span><span class="o">=</span><span class="mf">0.07</span><span class="p">,</span><span class="n">temperature</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>Within the support functions, we can find a function <code class="docutils literal notranslate"><span class="pre">initial_setup</span></code>
+that creates a region of a certain size, and a set of particles. This
+function is useful for setting the initial conditions of a system with a
+predetermined packing fraction. The resulting array can be directly
+input to the <code class="docutils literal notranslate"><span class="pre">copy</span></code> method to create many particles.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
+<span></span>In [3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">region</span><span class="p">,</span> <span class="n">initial_conditions</span> <span class="o">=</span> <span class="n">lmp</span><span class="o">.</span><span class="n">initial_setup</span><span class="p">(</span><span class="mi">150</span><span class="p">,</span> <span class="n">packing</span> <span class="o">=</span> <span class="mf">0.3</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span> <span class="n">radius</span> <span class="o">=</span> <span class="mf">1.4</span><span class="p">)</span>
+<span class="n">particle_array</span> <span class="o">=</span> <span class="n">particle</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">initial_conditions</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>The second thing we have to do is to create a field. For this we use an
+object of the <code class="docutils literal notranslate"><span class="pre">field</span></code> class. We also need a world class, which
+contains parameters such as temperature and cutoff.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
+<span></span>In [11]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">field</span> <span class="o">=</span> <span class="n">lmp</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="n">magnitude</span> <span class="o">=</span> <span class="mi">7</span><span class="p">,</span> <span class="n">frequency</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span> <span class="n">angle</span> <span class="o">=</span> <span class="mi">15</span><span class="p">)</span>
+<span class="n">world</span> <span class="o">=</span> <span class="n">lmp</span><span class="o">.</span><span class="n">world</span><span class="p">(</span><span class="n">temperature</span> <span class="o">=</span> <span class="mi">300</span><span class="p">,</span>
+                  <span class="n">region</span><span class="o">=</span><span class="n">region</span><span class="p">,</span> <span class="n">boundaries</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;p&#39;</span><span class="p">,</span><span class="s1">&#39;p&#39;</span><span class="p">,</span><span class="s1">&#39;f&#39;</span><span class="p">],</span> <span class="n">walls</span> <span class="o">=</span> <span class="p">[</span><span class="kc">False</span><span class="p">,</span><span class="kc">False</span><span class="p">,</span><span class="kc">True</span><span class="p">],</span>
+                  <span class="n">dipole_cutoff</span> <span class="o">=</span> <span class="mi">20</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>Finaly all the three objects, <code class="docutils literal notranslate"><span class="pre">particle_array</span></code>, <code class="docutils literal notranslate"><span class="pre">field</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">world</span></code> should be used to create a simulation object. This simulation
+object accepts the final set of parameters, such as the total time, the
+simulation type, the number of parallel cores, or the place where the
+simulation has to be saved.</p>
 </div>
 
 
