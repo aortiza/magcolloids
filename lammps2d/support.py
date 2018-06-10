@@ -288,6 +288,13 @@ def nearest_neighbors(points,sim):
 def dimers(trj, sim, distance=False):
     """ This returns a database of dimers in frames"""
     
+    try:
+        from tqdm import tqdm_notebook
+        tqdm_installed = True
+    except: 
+        def tqdm_notebook(iterator):
+            return iterator
+        
     if not distance:
         distance = 2*sim.particle_properties[0].radius
         
@@ -295,7 +302,7 @@ def dimers(trj, sim, distance=False):
     frames = trj.index.get_level_values('frame').unique()
     pairs_in_frame = []
     
-    for i_frame,frame in enumerate(frames):
+    for i_frame,frame in enumerate(tqdm_notebook(frames)):
         points = trj.loc[idx[frame,:]].filter(("x","y","z")).values
         p_id = trj.loc[idx[frame,:]].index.get_level_values('id').values
         
@@ -336,8 +343,9 @@ def dimers(trj, sim, distance=False):
             pairs_in_frame.append(pair_df)
             new_pair_id = len(pair_list)
     
-    
-    return pd.concat(pairs_in_frame,keys = frames).sort_index(level='frame')
+    dim = pd.concat(pairs_in_frame,keys = frames).sort_index(level='frame')
+    dim['t'] = dim.index.get_level_values('frame').values*sim.run_parameters.timestep
+    return dim
     
 def dimers_findpositions(dim,trj,sim):
     """
@@ -583,3 +591,67 @@ def nematic_order(dim,director=False):
         max_order = np.argmax(S)
         director = [np.cos(theta_0[max_order]),np.sin(theta_0[max_order])]
         return S[max_order], director
+        
+def lammpstrj_to_hdf5(name):
+    """
+    Converts the result of a simulation from lammpstrj to hdf5. 
+    name is the filename of the output file with no extension.
+    """
+    import lammps2d.simulation as sim
+    
+    try:
+        from tqdm import tqdm_notebook
+        tqdm_installed = True
+        
+    except:
+        from ipywidgets import FloatProgress
+        from IPython.display import display
+        
+        f = FloatProgress(min=0, max=len(lz_read.T))
+        display(f)
+        tqdm_installed = False
+        def tqdm_notebook(iterator):
+            return iterator
+            
+    lz_read = sim.trj_lazyread(name+'.lammpstrj')
+    store = pd.HDFStore(name+'.hd5',mode='w')
+    for i,t in enumerate(tqdm_notebook(lz_read.T)):
+        
+        trj = lz_read[i]
+        store.append('trj',trj)
+        
+        if not tqdm_installed:
+            f.value += 1
+    
+    store.close()
+            
+def strict_dimers(dim):
+    """ Marks those dimers that are not strict as non_strict. """
+    idx = pd.IndexSlice
+
+    frames = dim.index.get_level_values("frame").unique().values
+    dim_ids = dim.loc[idx[frames[::]]].index.get_level_values("id").unique().values
+
+    not_strict = np.array([],dtype=[("frame",'i'),("id",'f')])
+
+    for i,d_id in enumerate(dim_ids):
+        
+        members = dim.loc[idx[:,d_id],"members"].iloc[0]
+        
+        """ timespan is the set of frames where the dimer d_id exists""" 
+        timespan = dim.loc[idx[:,d_id],:].index.get_level_values("frame").unique().values
+        """ coexisting is an array of all the dimers that exist in the same timespan"""
+        coexisting = dim.loc[idx[tuple(timespan),np.delete(dim_ids,i)],"members"]
+        
+        third_neighbors = np.array([index for dimer,index in zip(coexisting,coexisting.index) 
+                                    if bool(dimer.intersection(members))],dtype=[("frame",'i'),("id",'f')])
+        
+        not_strict = np.append(not_strict,third_neighbors)
+
+    not_strict = pd.DataFrame(not_strict)
+    not_strict = not_strict.set_index(["frame","id"])
+
+    dim["strict"] = True
+    dim.loc[dim.index.intersection(not_strict.index),'strict']=False
+    
+    return dim
