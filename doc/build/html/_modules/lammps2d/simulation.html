@@ -1,0 +1,464 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>lammps2d.simulation &#8212; confined-colloids v0.2.0 documentation</title>
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for lammps2d.simulation</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">lammps2d.parameters</span> <span class="k">as</span> <span class="nn">parameters</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">string</span> <span class="k">as</span> <span class="nn">st</span>
+<span class="kn">import</span> <span class="nn">time</span> <span class="k">as</span> <span class="nn">tm</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">copy</span> <span class="k">as</span> <span class="nn">cp</span>
+<span class="kn">import</span> <span class="nn">jsonpickle</span>
+<span class="kn">from</span> <span class="nn">.</span> <span class="k">import</span> <span class="n">ureg</span>
+
+
+<div class="viewcode-block" id="sim"><a class="viewcode-back" href="../../api.html#lammps2d.sim">[docs]</a><span class="k">class</span> <span class="nc">sim</span><span class="p">():</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+        <span class="n">file_name</span> <span class="o">=</span> <span class="s2">&quot;test&quot;</span><span class="p">,</span> <span class="n">dir_name</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span><span class="n">stamp_time</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">particles</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">world</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">field</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">timestep</span> <span class="o">=</span> <span class="mf">1e-3</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">s</span><span class="p">,</span> <span class="n">framerate</span> <span class="o">=</span> <span class="mi">30</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">Hz</span><span class="p">,</span> <span class="n">total_time</span> <span class="o">=</span> <span class="mi">60</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">s</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">        A sim object contains the parameters defined before. It also requires some extra parameters that define the files in which the simulation scripts and results are stored &quot;&quot;&quot;</span>
+        
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">file_name</span> <span class="o">=</span> <span class="n">file_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dir_name</span> <span class="o">=</span> <span class="n">dir_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stamp_time</span> <span class="o">=</span> <span class="n">stamp_time</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">particles</span> <span class="o">=</span> <span class="n">particles</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">world</span> <span class="o">=</span> <span class="n">world</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">field</span> <span class="o">=</span> <span class="n">field</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">timestep</span> <span class="o">=</span> <span class="n">timestep</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">framerate</span> <span class="o">=</span> <span class="n">framerate</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">total_time</span> <span class="o">=</span> <span class="n">total_time</span>
+
+<div class="viewcode-block" id="sim.generate_scripts"><a class="viewcode-back" href="../../api.html#lammps2d.sim.generate_scripts">[docs]</a>    <span class="k">def</span> <span class="nf">generate_scripts</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This method generates the input script for the lammps simulation. </span>
+<span class="sd">        It accepts some options, which for now include:</span>
+<span class="sd">        * (future) input_file: boolean, (False) which specifies if the input file is stored separatelly from the main script. </span>
+<span class="sd">            This icreases readibility for large amounts of particles</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dir_name</span><span class="p">):</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dir_name</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">base_name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dir_name</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">file_name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">stamp_time</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">base_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_name</span> <span class="o">+</span> \
+                <span class="n">tm</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;_%Y_%m_</span><span class="si">%d</span><span class="s1">_%H_%M_%S&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">seed</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">1000000</span><span class="p">)</span>
+        <span class="c1">#self.seed = 1</span>
+                
+        <span class="bp">self</span><span class="o">.</span><span class="n">script_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_name</span><span class="o">+</span><span class="s1">&#39;.lmpin&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output_name</span> <span class="o">=</span>  <span class="bp">self</span><span class="o">.</span><span class="n">base_name</span><span class="o">+</span><span class="s1">&#39;.lammpstrj&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pickle_name</span> <span class="o">=</span>  <span class="bp">self</span><span class="o">.</span><span class="n">base_name</span><span class="o">+</span><span class="s1">&#39;.jp&#39;</span>
+        
+        <span class="c1">### Create strings</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">particles</span><span class="o">.</span><span class="n">create_string</span><span class="p">()</span>
+            
+        <span class="bp">self</span><span class="o">.</span><span class="n">world</span><span class="o">.</span><span class="n">create_string</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">create_string</span><span class="p">()</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">run_steps</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">total_time</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">ureg</span><span class="o">.</span><span class="n">s</span><span class="p">)</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">timestep</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">ureg</span><span class="o">.</span><span class="n">s</span><span class="p">)))</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">run_def</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">Template</span><span class="p">(</span><span class="s2">&quot;&quot;&quot; </span>
+<span class="s2">### ---Run Commands--- ###</span>
+<span class="s2">timestep 	$tmstp </span>
+<span class="s2">dump 	3 all custom $sampl $out_name id type x y z mu mux muy muz fx fy fz</span>
+<span class="s2">thermo_style 	custom step atoms</span>
+<span class="s2">thermo 	100  </span>
+<span class="s2">run 	$runtm</span>
+<span class="s2">                    &quot;&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">substitute</span><span class="p">(</span><span class="n">out_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_name</span><span class="p">,</span>
+                             <span class="n">tmstp</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">timestep</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">ureg</span><span class="o">.</span><span class="n">us</span><span class="p">))</span><span class="o">.</span><span class="n">magnitude</span><span class="p">,</span>
+                             <span class="n">sampl</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span>
+                                 <span class="mi">1</span><span class="o">/</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">framerate</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">ureg</span><span class="o">.</span><span class="n">Hz</span><span class="p">)</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">timestep</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">ureg</span><span class="o">.</span><span class="n">s</span><span class="p">)))),</span>
+                             <span class="n">runtm</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">run_steps</span><span class="p">)</span>
+                             
+                             
+        
+        <span class="c1">### Write strings</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">script_name</span><span class="p">,</span><span class="s1">&#39;w&#39;</span><span class="p">)</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;### ---preamble--- ###</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">world</span><span class="o">.</span><span class="n">world_def</span><span class="p">)</span>
+        
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">### ---Create Particles and Region--- ###</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">world</span><span class="o">.</span><span class="n">region_def</span><span class="p">)</span>
+        
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">particles</span><span class="o">.</span><span class="n">atom_def</span><span class="p">)</span>
+        
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">world</span><span class="o">.</span><span class="n">group_def</span><span class="p">)</span>
+        
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">particles</span><span class="o">.</span><span class="n">atom_prop</span><span class="p">)</span>
+        
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">### ---Fixes--- ###</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>    
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">variable_def</span><span class="p">)</span>
+        
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">world</span><span class="o">.</span><span class="n">integrator_def</span><span class="p">)</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">world</span><span class="o">.</span><span class="n">gravity_def</span><span class="p">)</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">world</span><span class="o">.</span><span class="n">wall_def</span><span class="p">)</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">fix_def</span><span class="p">)</span>
+        
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">run_def</span><span class="p">)</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">close</span>
+
+        <span class="n">pk</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pickle_name</span><span class="p">,</span><span class="s1">&#39;w&#39;</span><span class="p">)</span>
+        <span class="n">pk</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">jsonpickle</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="bp">self</span><span class="p">))</span>
+        <span class="n">pk</span><span class="o">.</span><span class="n">close</span>        </div>
+        
+    <span class="k">def</span> <span class="nf">generate_interaction_series</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">start</span><span class="p">,</span><span class="n">n_points</span><span class="p">,</span><span class="n">end</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This method generates a lammps script with no thermostat, </span>
+<span class="sd">        which simply moves a particle at a constant velocity through the x axis</span>
+<span class="sd">        and dumps the force calculated by lammps.</span>
+<span class="sd">        </span>
+<span class="sd">        The parameters are, </span>
+<span class="sd">        * start (3 number array) a vector of the starting point,</span>
+<span class="sd">        * n_points = number of points</span>
+<span class="sd">        * end = [0,0,0] a vector of the end point.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">base_name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sim_parameters</span><span class="o">.</span><span class="n">dir</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">sim_parameters</span><span class="o">.</span><span class="n">file_name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_parameters</span><span class="o">.</span><span class="n">stamp_time</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">base_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_name</span> <span class="o">+</span> \
+                <span class="n">tm</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;_%Y_%m_</span><span class="si">%d</span><span class="s1">_%H_%M_%S&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">seed</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">1000000</span><span class="p">)</span>
+                
+        <span class="bp">self</span><span class="o">.</span><span class="n">interaction_script_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_name</span><span class="o">+</span><span class="s1">&#39;.lmpfieldin&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">interaction_output_name</span> <span class="o">=</span>  <span class="bp">self</span><span class="o">.</span><span class="n">base_name</span><span class="o">+</span><span class="s1">&#39;.lmpfield&#39;</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">unitconversions</span><span class="p">()</span>
+        
+        <span class="n">preamble</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">Template</span><span class="p">(</span>
+            <span class="s2">&quot;## ---Preamble--- ## </span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span>
+            <span class="s2">&quot;units micro </span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span>
+            <span class="s2">&quot;atom_style hybrid sphere paramagnet </span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span>
+            <span class="s2">&quot;boundary s s s</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span>
+            <span class="s2">&quot;neighbor 4.0 nsq </span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span>
+            <span class="s2">&quot;pair_style lj/cut/dipole/cut $lj_cut $dpl_cut</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="c1">#&quot;pair_style lj/cut/dipole/cut\n&quot;)</span>
+            
+
+        <span class="n">preamble</span> <span class="o">=</span> <span class="n">preamble</span><span class="o">.</span><span class="n">substitute</span><span class="p">(</span>
+                           <span class="n">lj_cut</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">field_parameters</span><span class="o">.</span><span class="n">lj_cutoff</span><span class="p">,</span>
+                           <span class="n">dpl_cut</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">field_parameters</span><span class="o">.</span><span class="n">dipole_cutoff</span>
+                           <span class="p">)</span>
+        
+        <span class="n">atoms</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">Template</span><span class="p">(</span>
+            <span class="s2">&quot;create_atoms 1 single $x0 $y0 $z0 </span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span> 
+            <span class="s2">&quot;create_atoms 1 single 0 0 0 </span><span class="se">\n\n</span><span class="s2">&quot;</span><span class="p">)</span>
+            
+        <span class="n">atoms</span> <span class="o">=</span> <span class="n">atoms</span><span class="o">.</span><span class="n">substitute</span><span class="p">(</span><span class="n">x0</span> <span class="o">=</span> <span class="n">start</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">y0</span> <span class="o">=</span> <span class="n">start</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">z0</span> <span class="o">=</span> <span class="n">start</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+            
+        <span class="n">world</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">Template</span><span class="p">(</span>
+            <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">## ---Set World-- ## </span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span>
+            <span class="s2">&quot;region space block $spx1 $spx2 $spy1 $spy2 $spz1 $spz2 # this is in microns </span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span>
+            <span class="s2">&quot;create_box 1 space </span><span class="se">\n\n</span><span class="s2">&quot;</span><span class="o">+</span>
+            <span class="n">atoms</span> <span class="o">+</span> 
+            <span class="s2">&quot;group Atoms type 1 </span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span> 
+            <span class="s2">&quot;group moving id 1 </span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span> 
+            <span class="s2">&quot;pair_coeff * * $lj_eps $lj_sgm $lj_cut $dp_cut</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+        
+        <span class="n">region</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="nb">min</span><span class="p">(</span><span class="n">start</span><span class="p">,</span><span class="n">end</span><span class="p">),</span><span class="nb">max</span><span class="p">(</span><span class="n">start</span><span class="p">,</span><span class="n">end</span><span class="p">)])</span>
+        <span class="n">region</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">region</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="mi">10</span>
+        <span class="n">region</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">region</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="mi">10</span>
+        
+        <span class="n">world</span> <span class="o">=</span> <span class="n">world</span><span class="o">.</span><span class="n">substitute</span><span class="p">(</span><span class="n">spx1</span> <span class="o">=</span> <span class="n">region</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span>
+                        <span class="n">spx2</span> <span class="o">=</span> <span class="n">region</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span>
+                        <span class="n">spy1</span> <span class="o">=</span><span class="n">region</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">],</span>
+                        <span class="n">spy2</span> <span class="o">=</span> <span class="n">region</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">],</span>
+                        <span class="n">spz1</span> <span class="o">=</span> <span class="n">region</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">2</span><span class="p">],</span>
+                        <span class="n">spz2</span> <span class="o">=</span> <span class="n">region</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">],</span>
+                        <span class="n">lj_eps</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">field_parameters</span><span class="o">.</span><span class="n">lj_parameters</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                        <span class="n">lj_sgm</span> <span class="o">=</span> <span class="mi">2</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">particle_properties</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">radius</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">field_parameters</span><span class="o">.</span><span class="n">lj_parameters</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+                        <span class="n">lj_cut</span> <span class="o">=</span> <span class="mi">2</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">particle_properties</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">radius</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">field_parameters</span><span class="o">.</span><span class="n">lj_cutoff</span><span class="p">,</span>
+                        <span class="n">dp_cut</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">field_parameters</span><span class="o">.</span><span class="n">dipole_cutoff</span><span class="p">)</span>
+
+        <span class="n">props</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+                <span class="p">[</span><span class="n">st</span><span class="o">.</span><span class="n">Template</span><span class="p">(</span><span class="s2">&quot;set atom $id mass $mass susceptibility $susc diameter $diameter&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">substitute</span><span class="p">(</span>
+                    <span class="n">mass</span> <span class="o">=</span><span class="n">m</span><span class="p">,</span> <span class="n">susc</span> <span class="o">=</span> <span class="n">xi</span><span class="p">,</span> <span class="n">diameter</span><span class="o">=</span><span class="mi">2</span><span class="o">*</span><span class="n">r</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span><span class="p">,(</span><span class="n">m</span><span class="p">,</span><span class="n">xi</span><span class="p">,</span><span class="n">r</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mass</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">susceptibility</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">radius</span><span class="p">))])</span><span class="o">+</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+                
+        <span class="n">particle_props</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">Template</span><span class="p">(</span>
+            <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">## ---Particle Properties---## </span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span>
+            <span class="s2">&quot;mass * 1 </span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span>
+            <span class="n">props</span> <span class="o">+</span> 
+            <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">particle_props</span> <span class="o">=</span> <span class="n">particle_props</span><span class="o">.</span><span class="n">substitute</span><span class="p">()</span>
+         
+        <span class="n">field</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">Template</span><span class="p">(</span>
+            <span class="s2">&quot;## ---Fixes---## </span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span> 
+            <span class="s2">&quot;variable Bmag atom $Bmag </span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span> 
+            <span class="s2">&quot;variable omega atom $omega </span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span> 
+            <span class="s2">&quot;variable theta atom $angle </span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span> 
+            <span class="s2">&quot;variable fieldx atom v_Bmag*sin(v_omega*time)*sin(v_theta) </span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span> 
+            <span class="s2">&quot;variable fieldy atom v_Bmag*cos(v_omega*time)*sin(v_theta) </span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span> 
+            <span class="s2">&quot;variable fieldz atom v_Bmag*cos(v_theta) </span><span class="se">\n\n</span><span class="s2">&quot;</span><span class="p">)</span>
+        
+        <span class="n">field</span> <span class="o">=</span> <span class="n">field</span><span class="o">.</span><span class="n">substitute</span><span class="p">(</span><span class="n">Bmag</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">field_mag_h</span><span class="p">,</span>
+                        <span class="n">omega</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">frequency</span><span class="o">*</span><span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span>
+                        <span class="n">angle</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">angle</span><span class="p">)</span>
+
+        <span class="n">fixes</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">Template</span><span class="p">(</span>
+            <span class="s2">&quot;fix 	1 moving move linear $velx $vely $velz </span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span>
+            <span class="s2">&quot;fix 	2 Atoms setdipole v_fieldx v_fieldy v_fieldz </span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">fixes</span> <span class="o">=</span> <span class="n">fixes</span><span class="o">.</span><span class="n">substitute</span><span class="p">(</span>
+            <span class="n">velx</span> <span class="o">=</span> <span class="o">-</span><span class="p">(</span><span class="n">start</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">end</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">/</span><span class="n">n_points</span><span class="p">,</span>
+            <span class="n">vely</span> <span class="o">=</span> <span class="o">-</span><span class="p">(</span><span class="n">start</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">end</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span><span class="o">/</span><span class="n">n_points</span><span class="p">,</span>
+            <span class="n">velz</span> <span class="o">=</span> <span class="o">-</span><span class="p">(</span><span class="n">start</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">-</span><span class="n">end</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span><span class="o">/</span><span class="n">n_points</span><span class="p">)</span>
+            
+        <span class="n">run</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">Template</span><span class="p">(</span>
+            <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">## ---Run Commands--##</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;timestep 	1 </span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span> 
+            <span class="s2">&quot;dump 	3 all custom 1 $out_name id type x y z mu mux muy muz fx fy fz</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span> 
+            <span class="s2">&quot;thermo_style 	custom step atoms </span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span> 
+            <span class="s2">&quot;thermo 	100 </span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span> 
+            <span class="s2">&quot;run 	$runtm </span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">run</span> <span class="o">=</span> <span class="n">run</span><span class="o">.</span><span class="n">substitute</span><span class="p">(</span><span class="n">out_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">interaction_output_name</span><span class="p">,</span>
+                             <span class="n">runtm</span> <span class="o">=</span> <span class="n">n_points</span><span class="p">)</span>
+        
+        <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">interaction_script_name</span><span class="p">,</span><span class="s1">&#39;w&#39;</span><span class="p">)</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">preamble</span><span class="p">)</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">world</span><span class="p">)</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">particle_props</span><span class="p">)</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">field</span><span class="p">)</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">fixes</span><span class="p">)</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">run</span><span class="p">)</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        
+        <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span><span class="o">==</span><span class="s1">&#39;darwin&#39;</span><span class="p">:</span>
+            <span class="n">lmp_exec</span> <span class="o">=</span> <span class="s2">&quot;./lmp_mac&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">lmp_exec</span> <span class="o">=</span> <span class="s2">&quot;lmp_mingw64.exe&quot;</span>
+            
+        <span class="nb">print</span><span class="p">(</span><span class="n">lmp_exec</span> <span class="o">+</span> <span class="s2">&quot; -in &quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">interaction_script_name</span><span class="p">)</span>
+
+        <span class="n">os</span><span class="o">.</span><span class="n">system</span><span class="p">(</span><span class="n">lmp_exec</span> <span class="o">+</span> <span class="s2">&quot; -in &quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">interaction_script_name</span><span class="p">)</span>
+        
+        <span class="n">read_obj</span> <span class="o">=</span> <span class="n">trj_lazyread</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">interaction_output_name</span><span class="p">)</span>
+        
+        <span class="k">return</span> <span class="n">read_obj</span><span class="o">.</span><span class="n">readtrj</span><span class="p">()</span>
+    
+    <span class="k">def</span> <span class="nf">unitconversions</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This function converts units from microns seconds piconewtons,</span>
+<span class="sd">        which is the standard parameter system, to lammps micro units </span>
+<span class="sd">        which are microns microseconds and picogram-micrometer/microsecond^2</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># First the easy ones which are the time units</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">timestep</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">run_parameters</span><span class="o">.</span><span class="n">timestep</span><span class="o">*</span><span class="mf">1e6</span> <span class="c1"># (us/step)</span>
+        <span class="c1"># The frame rate and the total_time are not in microseconds but in units of timestep.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">steps_per_print</span> <span class="o">=</span> <span class="mi">1</span><span class="o">/</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">run_parameters</span><span class="o">.</span><span class="n">framerate</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">run_parameters</span><span class="o">.</span><span class="n">timestep</span><span class="p">)</span> 
+        <span class="c1">#(1/ts step/s)*(1/fps s/f) = (steps/frame)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">run_steps</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">run_parameters</span><span class="o">.</span><span class="n">total_time</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">run_parameters</span><span class="o">.</span><span class="n">timestep</span>
+        
+        <span class="c1"># now field parameters. </span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">angle</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">field_parameters</span><span class="o">.</span><span class="n">angle</span><span class="o">/</span><span class="mi">180</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="c1">#radians</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">frequency</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">field_parameters</span><span class="o">.</span><span class="n">frequency</span><span class="o">*</span><span class="mf">1e-6</span>
+        <span class="c1"># (f 1/s)*(1e-6 s/us)*(ts us/step)</span>
+        <span class="n">permeability</span> <span class="o">=</span> <span class="mf">4e5</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="c1">#pN/A^2</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">field_mag_h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">field_parameters</span><span class="o">.</span><span class="n">magnitude</span><span class="o">/</span><span class="n">permeability</span><span class="o">*</span><span class="mf">1e9</span><span class="o">/</span><span class="mf">2.99e8</span> <span class="c1">#I don&#39;t know for sure.</span>
+        
+        <span class="c1"># world parameters</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">temperature</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_parameters</span><span class="o">.</span><span class="n">temperature</span>
+        <span class="c1">#kb = float(4/300) #pN*nm/K</span>
+        <span class="n">kb</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="mi">4</span><span class="o">/</span><span class="mi">300</span><span class="p">)</span><span class="o">*</span><span class="mf">1e-6</span> <span class="c1">#pg um^2/us^2/K</span>
+        <span class="c1"># damping coefficient specification</span>
+        <span class="c1"># I can only specify a single damping coefficient, which is a parameter to the bd fix</span>
+        <span class="c1"># To give a different diffusion to each particle, I need to change their mass. </span>
+        <span class="n">mass</span> <span class="o">=</span> <span class="mi">1</span> <span class="c1"># in g</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">diffusion</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">p</span><span class="o">.</span><span class="n">diffusion</span><span class="o">*</span><span class="mf">1e-6</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">particle_properties</span><span class="p">])</span> <span class="c1"># in (um^2/us)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">susceptibility</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">p</span><span class="o">.</span><span class="n">susceptibility</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">particle_properties</span><span class="p">])</span> <span class="c1"># no dimensions</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">radius</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">p</span><span class="o">.</span><span class="n">radius</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">particle_properties</span><span class="p">])</span> <span class="c1"># um</span>
+        
+        <span class="n">D_mean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">diffusion</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">damp</span> <span class="o">=</span> <span class="n">D_mean</span><span class="o">*</span><span class="n">mass</span><span class="o">/</span><span class="p">(</span><span class="n">kb</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">temperature</span><span class="p">)</span> <span class="c1"># this is in 1/us</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">mass</span> <span class="o">=</span> <span class="p">(</span><span class="n">kb</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">temperature</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">damp</span><span class="p">)</span><span class="o">*</span><span class="mi">1</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">diffusion</span> <span class="c1"># this is in picograms</span>
+        
+<div class="viewcode-block" id="sim.run"><a class="viewcode-back" href="../../api.html#lammps2d.sim.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;This function runs an input script named filename in lammps. The input should be located in target_dir&quot;&quot;&quot;</span>
+        <span class="n">exec_paths</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)),</span> <span class="s1">&#39;lammps_executables&#39;</span><span class="p">))</span>
+        
+        <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span><span class="o">==</span><span class="s1">&#39;darwin&#39;</span><span class="p">:</span>
+            <span class="n">lmp_exec</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">exec_paths</span><span class="p">,</span><span class="s2">&quot;lmp_mac&quot;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span><span class="o">==</span><span class="s1">&#39;linux&#39;</span><span class="p">:</span>
+            <span class="n">lmp_exec</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">exec_paths</span><span class="p">,</span><span class="s2">&quot;lmp_serial&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">lmp_exec</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">exec_paths</span><span class="p">,</span><span class="s2">&quot;lmp_mingw64-native.exe&quot;</span><span class="p">)</span>
+
+        <span class="n">os</span><span class="o">.</span><span class="n">system</span><span class="p">(</span><span class="n">lmp_exec</span> <span class="o">+</span> <span class="s2">&quot; -in &quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">script_name</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="sim.load"><a class="viewcode-back" href="../../api.html#lammps2d.sim.load">[docs]</a>    <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">**</span><span class="n">kargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;This method creates a lazy read object. The option read_trj = True reads the whole trj file and returns the output&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lazy_read</span> <span class="o">=</span> <span class="n">trj_lazyread</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_name</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="s2">&quot;read_trj&quot;</span> <span class="ow">in</span> <span class="n">kargs</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">kargs</span><span class="p">[</span><span class="s2">&quot;read_trj&quot;</span><span class="p">]</span><span class="o">==</span><span class="kc">True</span><span class="p">:</span>
+                <span class="n">trj</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lazy_read</span><span class="o">.</span><span class="n">readtrj</span><span class="p">()</span>
+                <span class="n">trj</span><span class="p">[</span><span class="s1">&#39;t&#39;</span><span class="p">]</span><span class="o">=</span><span class="n">trj</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">get_level_values</span><span class="p">(</span><span class="s1">&#39;frame&#39;</span><span class="p">)</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">run_parameters</span><span class="o">.</span><span class="n">timestep</span>
+                <span class="k">return</span> <span class="n">trj</span></div></div>
+                              
+<span class="c1">#from collections import Sequence</span>
+<span class="k">class</span> <span class="nc">trj_lazyread</span><span class="p">():</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">Filename</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">T</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">([])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Name</span> <span class="o">=</span> <span class="n">Filename</span>
+        <span class="n">item</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">([])</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;frame&#39;</span><span class="p">]</span><span class="o">+</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="s1">&#39;type&#39;</span><span class="p">,</span><span class="s1">&#39;x&#39;</span><span class="p">,</span><span class="s1">&#39;y&#39;</span><span class="p">,</span><span class="s1">&#39;z&#39;</span><span class="p">,</span><span class="s1">&#39;mu&#39;</span><span class="p">,</span><span class="s1">&#39;mux&#39;</span><span class="p">,</span><span class="s1">&#39;muy&#39;</span><span class="p">,</span><span class="s1">&#39;muz&#39;</span><span class="p">,</span><span class="s1">&#39;fx&#39;</span><span class="p">,</span><span class="s1">&#39;fy&#39;</span><span class="p">,</span><span class="s1">&#39;fz&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">formats</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;i8&#39;</span><span class="p">]</span><span class="o">+</span><span class="p">[</span><span class="s1">&#39;i8&#39;</span><span class="p">,</span><span class="s1">&#39;i8&#39;</span><span class="p">,</span><span class="s1">&#39;float32&#39;</span><span class="p">,</span><span class="s1">&#39;float32&#39;</span><span class="p">,</span><span class="s1">&#39;float32&#39;</span><span class="p">,</span><span class="s1">&#39;float32&#39;</span><span class="p">,</span><span class="s1">&#39;float32&#39;</span><span class="p">,</span><span class="s1">&#39;float32&#39;</span><span class="p">,</span><span class="s1">&#39;float32&#39;</span><span class="p">,</span><span class="s1">&#39;float32&#39;</span><span class="p">,</span><span class="s1">&#39;float32&#39;</span><span class="p">,</span><span class="s1">&#39;float32&#39;</span><span class="p">]</span>
+        
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">Filename</span><span class="p">)</span> <span class="k">as</span> <span class="n">d</span><span class="p">:</span>
+            <span class="n">line</span> <span class="o">=</span> <span class="s2">&quot;d&quot;</span>
+            <span class="k">while</span> <span class="n">line</span><span class="p">:</span>
+                <span class="n">line</span> <span class="o">=</span> <span class="n">d</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>
+                
+                <span class="k">if</span> <span class="s1">&#39;ITEM: TIMESTEP&#39;</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
+                    <span class="n">line</span> <span class="o">=</span> <span class="n">d</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>
+                    <span class="n">t</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+                    
+                <span class="k">if</span> <span class="s1">&#39;ITEM: NUMBER OF ATOMS&#39;</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
+                    <span class="n">line</span> <span class="o">=</span> <span class="n">d</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>
+                    <span class="n">item</span><span class="p">[</span><span class="s2">&quot;atoms&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+                    
+                <span class="k">if</span> <span class="s1">&#39;ITEM: ATOMS&#39;</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
+                    <span class="n">item</span><span class="p">[</span><span class="s2">&quot;location&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">d</span><span class="o">.</span><span class="n">tell</span><span class="p">()</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">T</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+     
+    <span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sliced</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">readtrj</span><span class="p">(</span><span class="n">sliced</span><span class="p">)</span>
+                        
+    <span class="k">def</span> <span class="nf">readframe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">time</span><span class="p">):</span>
+        
+        <span class="n">Atoms</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span>
+            <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">T</span><span class="p">[</span><span class="n">time</span><span class="p">][</span><span class="s2">&quot;atoms&quot;</span><span class="p">]),</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="p">{</span>
+                <span class="s1">&#39;names&#39;</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span>
+                <span class="s1">&#39;formats&#39;</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">formats</span><span class="p">[</span><span class="mi">1</span><span class="p">:]})</span>
+        <span class="n">j</span><span class="o">=</span><span class="mi">0</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Name</span><span class="p">)</span> <span class="k">as</span> <span class="n">d</span><span class="p">:</span>
+            <span class="n">d</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">T</span><span class="p">[</span><span class="n">time</span><span class="p">][</span><span class="s2">&quot;location&quot;</span><span class="p">])</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">T</span><span class="p">[</span><span class="n">time</span><span class="p">][</span><span class="s2">&quot;atoms&quot;</span><span class="p">])):</span>
+                <span class="n">line</span> <span class="o">=</span> <span class="n">d</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>
+                <span class="n">line</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;-1.#IND&quot;</span><span class="p">,</span><span class="s2">&quot;-NaN&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;1.#IND&quot;</span><span class="p">,</span><span class="s2">&quot;NaN&quot;</span><span class="p">)</span>
+                <span class="n">linearray</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="nb">float</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">)</span> <span class="k">if</span> <span class="n">i</span><span class="o">!=</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">])</span>
+                <span class="n">Atoms</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">linearray</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                <span class="n">Atoms</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">linearray</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+                <span class="n">Atoms</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">linearray</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+                <span class="n">Atoms</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">linearray</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+                <span class="n">Atoms</span><span class="p">[</span><span class="s1">&#39;z&#39;</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">linearray</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span>
+                <span class="n">Atoms</span><span class="p">[</span><span class="s1">&#39;mu&#39;</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">linearray</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span>
+                <span class="n">Atoms</span><span class="p">[</span><span class="s1">&#39;mux&#39;</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">linearray</span><span class="p">[</span><span class="mi">6</span><span class="p">]</span>
+                <span class="n">Atoms</span><span class="p">[</span><span class="s1">&#39;muy&#39;</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">linearray</span><span class="p">[</span><span class="mi">7</span><span class="p">]</span>
+                <span class="n">Atoms</span><span class="p">[</span><span class="s1">&#39;muz&#39;</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">linearray</span><span class="p">[</span><span class="mi">8</span><span class="p">]</span>
+                <span class="n">Atoms</span><span class="p">[</span><span class="s1">&#39;fx&#39;</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">linearray</span><span class="p">[</span><span class="mi">9</span><span class="p">]</span>
+                <span class="n">Atoms</span><span class="p">[</span><span class="s1">&#39;fy&#39;</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">linearray</span><span class="p">[</span><span class="mi">10</span><span class="p">]</span>
+                <span class="n">Atoms</span><span class="p">[</span><span class="s1">&#39;fz&#39;</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">linearray</span><span class="p">[</span><span class="mi">11</span><span class="p">]</span>
+                <span class="n">j</span><span class="o">=</span><span class="n">j</span><span class="o">+</span><span class="mi">1</span><span class="p">;</span>
+        <span class="k">return</span> <span class="n">Atoms</span>
+    <span class="k">def</span> <span class="nf">readtrj</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;reads a trj from the file and returns a pandas object. </span>
+<span class="sd">        accepts as first argument a slice object, which allows to read subsets of the file&quot;&quot;&quot;</span>
+        <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;frame&#39;</span><span class="p">]</span><span class="o">+</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">readframe</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">keys</span><span class="p">())[</span><span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">names</span><span class="p">)</span>
+        
+        <span class="n">frames</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">keys</span><span class="p">())))</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+            <span class="n">frames</span> <span class="o">=</span> <span class="n">frames</span><span class="p">[</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+            <span class="k">if</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="o">!=</span><span class="s2">&quot;slice&quot;</span><span class="p">:</span>
+                <span class="n">frames</span><span class="o">=</span><span class="p">[</span><span class="n">frames</span><span class="p">]</span>
+
+        <span class="n">accum</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="p">[],</span><span class="n">columns</span><span class="o">=</span><span class="n">columns</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">frames</span><span class="p">:</span>
+            <span class="n">frame_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">readframe</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+            <span class="n">entry</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">frame_data</span><span class="p">)</span>
+            <span class="n">entry</span><span class="p">[</span><span class="s1">&#39;frame&#39;</span><span class="p">]</span><span class="o">=</span><span class="n">i</span>
+            <span class="n">accum</span> <span class="o">=</span> <span class="n">accum</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">entry</span><span class="p">)</span>
+<span class="c1">#            for part in frame_data: </span>
+<span class="c1">#                data = [np.array([i]+list(part))]</span>
+<span class="c1">#                entry = pd.DataFrame(data=data,columns=columns)</span>
+<span class="c1">#                accum = accum.append(entry)</span>
+        
+        <span class="n">accum</span> <span class="o">=</span> <span class="n">accum</span><span class="o">.</span><span class="n">set_index</span><span class="p">([</span><span class="s1">&#39;frame&#39;</span><span class="p">,</span><span class="s1">&#39;id&#39;</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">accum</span><span class="o">.</span><span class="n">sort_index</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="s1">&#39;frame&#39;</span><span class="p">)</span>
+    
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, Antonio Ortiz-Ambriz.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

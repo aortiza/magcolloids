@@ -1,130 +1,222 @@
-class particle():
-    def __init__(self,position,**kargs):
+import string as st
+import numpy as np
+from . import ureg
+
+""" Here we should change the abstraction: instead of a collection of particles with parameters, perhaps it would be more adequate to define a collection of particles with a single set of parameters. The program could then create a script from several collections of particles, which would allow different parameters. This is more in line with the way of lammps, and therefore probably simpler """
+
+class particles():
+    """ A type of particle to be simulated """
+    def __init__(self, positions, 
+                radius = 2*ureg.um,
+                susceptibility = 1,
+                drag = 4e6*ureg.pN/(ureg.um/ureg.s), 
+                diffusion = None, temperature = None, 
+                density = 1000*ureg.kg/ureg.m**3):
         """
-        Initializes a set of particle properties. Normally, for each particle we define a particle properties object. 
-        the required parameter is the initial position
-        the position has to be either the string "random" or a list of three numbers. 
-        It the position is specified as "random", the program requires also a space specified. 
-        
-        Other optional parameters are:
-            radius (default = 4um)
-            susceptibility (default = 1)
-            diffusion (default = 1um^2/s)
+        Initializes a particle type. 
+        The diffusion coefficient can be given instead o the drag.
+        In that case, the temperature is also needed to calculate the drag. 
+        This represents the density mismatch of the particle in the solvent
         """
-        # defaults
-        self.radius = 1 #um
-        self.susceptibility = 0.1
-        self.diffusion = 1 #um^2/s
         
-        if (not isinstance(position, (str))) & (len(position)==3):
-            self.initial_position = [position[0],position[1],position[2]] #um
-        elif position.lower() == "random".lower():
-            if 'space' in kargs:
-                space = kargs['space']
-                if len(space['region'])==3:
-                    self.initial_position = [s*r-s/2 for s,r in zip(space['region'],np.random.rand(3))]
-                if len(space['region'])==6:
-                    size = space['region'][1::2]-space['region'][0::2]
-                    center = space['region'][1::2]+space['region'][0::2]/2
-                    self.initial_position = [s*r-s/2 for s,r in zip(size,np.random.rand(3))]
-                    self.initial_position = [r+c for s,r in zip(center,self.initial_position)]
-            else:
-                #If we expect a random starting position, we need Space to be defined. 
-                #that can be input either by introducing the sim_parameters or the space dictionary.
-                raise Exception("I can't place particles randomly if I don't know the coordinates of the space")
+        if diffusion:
+            
+            KbT = 4*(ureg.pN*ureg.nm)/(300*ureg.K)*temperature
+            drag = KbT/diffusion
+            
+        self.positions = positions.to(ureg.um)
+        self.radius = radius.to(ureg.um)
+        self.susceptibility = susceptibility
+        self.drag = drag.to(ureg.pg/ureg.us)
+        self.mass = (density*4/3*np.pi*(radius)**3).to(ureg.pg)
+        
+        damp = 1e-3*ureg.us
+        
+        self.drag_mass = (drag*damp).to(ureg.pg)
+        
+    def create_string(self):
+        
+        
+        self.atom_def = "\n".join(
+            [st.Template("create_atoms 1 single $x0 $y0 $z0").substitute(
+                x0=pos[0],y0=pos[1],z0=pos[2]) for pos in self.positions.magnitude]
+        )
+        
+        
+        self.atom_prop = \
+            st.Template("mass * $mass \n").substitute(mass = self.drag_mass.magnitude) + \
+            "\n".join(
+            [st.Template("set atom $id mass $mass susceptibility $susc diameter $diameter").substitute(
+                mass = self.drag_mass.magnitude, susc = self.susceptibility,
+                diameter=2*self.radius.magnitude, id=part_id+1) for (part_id,pos) in enumerate(self.positions)]
+        )+"\n"
+        
+
+class world():
+    """ Real world parameters like the temperature. Also the confining walls
+    Sets world parameters, like temperture, region, dipole cutoff and such.
+    
+    the lj and dipole parameters are in units of radius. 
+    
+    If the dipole_cutoff is not given, the program should calculate a default cutoff 
+            as the length when the field is reduced to a fraction of KbT. 
+            .. to do::
+    """
+    def __init__(self, particles,
+                temperature = 300*ureg.K, region = [200,200,20]*ureg.um,
+                boundaries = ["s","s","f"], walls=[False,False,True],
+                dipole_cutoff = None, lj_cutoff = 1, 
+                lj_parameters = [1e-2*ureg.pg*ureg.um**2/ureg.us**2, 2**(-1/6)],**kargs):
+
+        self.particles=particles
+        
+        self.temperature = temperature
+        self.region = region
+        self.boundaries = boundaries
+        self.walls = walls
+        self.dipole_cutoff = dipole_cutoff #um
+        self.lj_cutoff = lj_cutoff # sigma
+        self.lj_parameters = lj_parameters #[pg um^2 us^-2,sigma]
+        
+        
+        if len(self.region)==3:
+            self.region = [p*s/2 for s in self.region for p in [-1,1]]
+        
+        if not dipole_cutoff:
+            if "field" in kargs:
+                pass
+                
+    def create_string(self):
+        
+        self.world_def = st.Template("""
+units micro
+atom_style hybrid sphere paramagnet
+boundary $x_bound $y_bound $z_bound
+neighbor 4.0 nsq
+pair_style lj/cut/dipole/cut $lj_cut $dpl_cut
+""")
+        self.world_def = self.world_def.substitute(
+                                x_bound = self.boundaries[0],
+                                y_bound = self.boundaries[1],
+                                z_bound = self.boundaries[2],
+                                lj_cut = self.lj_cutoff,
+                                dpl_cut = self.dipole_cutoff.magnitude
+                                )
+        
+        
+        self.region_def = st.Template("""
+region space block $spx1 $spx2 $spy1 $spy2 $spz1 $spz2 # this is in microns
+create_box 1 space
+""")
+            
+        self.region_def = self.region_def.substitute(
+            spx1 = self.region[0].magnitude,
+            spx2 = self.region[1].magnitude,
+            spy1 = self.region[2].magnitude,
+            spy2 = self.region[3].magnitude,
+            spz1 = self.region[4].magnitude,
+            spz2 = self.region[5].magnitude)
+        
+        self.group_def = st.Template("""
+group Atoms type 1
+pair_coeff * * $lj_eps $lj_sgm $lj_cut $dp_cut 
+""").substitute(
+                lj_eps=self.lj_parameters[0].magnitude,
+                lj_sgm=((2*self.particles.radius)*self.lj_parameters[1]).magnitude,
+                lj_cut=((2*self.particles.radius)*self.lj_cutoff).magnitude,
+                dp_cut=self.dipole_cutoff.magnitude
+                )
+        
+        damp = 1e-3*ureg.us
+        # self.damp = diffusion*mass/(kb*self.temperature)
+        # mass = damp/(diffusion/(KbT)) = damp/drag
+        
+        self.seed = np.random.randint(1000000)
+        
+        self.integrator_def = st.Template("""
+fix 	1 Atoms bd $temp $damp $seed 
+""").substitute(temp=self.temperature.magnitude, damp=damp.magnitude, seed=self.seed)
+        
+        self.gravity = (
+            self.particles.mass*(9.8*ureg.m/ureg.s**2)
+            ).to(ureg.pg*ureg.um/ureg.us**2)
+        
+        self.gravity_def = st.Template("""
+fix     2 Atoms addforce 0 0 $mg
+""").substitute(mg = -self.gravity.magnitude) # pg*um/(us^2) (I hope)
+        
+        if any(self.walls):
+            walls = [
+                "%slo EDGE $lj_eps $lj_sgm  $lj_cut %shi EDGE $lj_eps $lj_sgm  $lj_cut "%(r,r)
+                if w else "" for (r,w) in zip(["x","y","z"],self.walls)]
+            walls = "fix 	3 Atoms wall/lj126 "+"".join(walls)+" \n"
+        else: 
+            walls = ""
+        
+        self.wall_def = st.Template(walls).substitute(
+                lj_eps=self.lj_parameters[0].magnitude,
+                lj_sgm=((self.particles.radius)*self.lj_parameters[1]).magnitude,
+                lj_cut=((self.particles.radius)*self.lj_cutoff).magnitude,
+                )
+    def reset_seed(self, seed = None):
+        """ Resets the seed of the world object for it to be used again. If the seed parameter is used, the seed is set to that. If not, it is a random number between 1 and 1000000 """
+        
+        if seed:
+            self.seed = seed
         else:
-            raise Exception("This is an invalid value for the required argument position")
-        
-        if 'susceptibility' in kargs: self.susceptibility = kargs['susceptibility']
-        
-        if 'diffusion' in kargs: self.diffusion = kargs['diffusion']
-        elif 'drag' in kargs: 
-            drag = kargs['drag'] #pN/(nm/s)
-            if 'temperature' in kargs:
-                temp = kargs['temperature']
-                KbT = 4/300*temp
-                self.diffusion = KbT/drag*1e-6 #pN nm / pN*(nm/s) = nm^2/s = 1e-6um^2/nm^2*nm^2/s = 1e-6*um^2/s
-
-        
-        if 'radius' in kargs:
-            self.radius = kargs['radius']
-            if 'diameter' in kargs:
-                warn('You have too many particle size specifications')
-        elif 'diameter' in kargs:
-            self.radius = kargs['diameter']/2
-            if 'radius' in kargs:
-                warn('You have too many particle size specifications')
-
-class run():
-    def __init__(self,**kargs):
-        """ 
-        Optional keyword parameters are:
-        timestep (default = 1e-3 sec)
-        framerate (default = 30 sec)
-        total_time (default = 60 sec)
-        """
-        
-        self.timestep = 1e-3 #s
-        self.framerate = 30 #s
-        self.total_time = 60 #s
-        
-        if 'timestep' in kargs: self.timestep = kargs['timestep']
-        if 'framerate' in kargs: self.framerate = kargs['framerate']
-        if 'total_time' in kargs: self.total_time = kargs['total_time']
+            self.seed = np.random.randint(1000000)
+            
+                
         
 class field():
-    def __init__(self,**kargs):
+    def __init__(self,
+                magnitude = 10*ureg.mT,
+                frequency = 0*ureg.Hz,
+                angle = 0*ureg.degree, 
+                fieldx=None, fieldy = None, fieldz = None):
         """
-        Optional keyword parameters are:
-        magnitude (= 10mT)
-        frequency (= 10Hz)
-        angle (= 30º)
-        dipole_cutoff (= 30um)
-        lj_cutoff (=1 sigma)
-        self.lj_parameters = [1e-2,2**(-1/6)] #[pg um^2 us^-2,sigma]
-        walls (=[-5um,5um])
+        Characteristics of the field that sets the dipole moment of superparamagnetic particles
+        It's normally a precessing field, 
+        but every parameter can accept a function as a string in the lammps standard.
+        Also, the components of the field can be set to a different function by passing a string 
+        to the parameters `fieldx`,`fieldy`,`fieldz`.
+        Note however that the field functions should be in lammps units
         """
-        self.magnitude = 10 #mT
-        self.frequency = 10 #Hz
-        self.angle = 30 #degrees
-        self.dipole_cutoff = 30 #um
-        self.lj_cutoff = 1 # sigma
-        self.lj_parameters = [1e-2,1/(2**(1/6))] #[pg um^2 us^-2,sigma]
-        self.walls = [] #um
+        # in the future the parameters could be input as a dictionary, This would allow us to input a variable number of parameters, specific to the function being applied.
         
-        if 'magnitude' in kargs: self.magnitude = kargs['magnitude']
-        if 'frequency' in kargs: self.frequency = kargs['frequency']
-        if 'angle' in kargs: self.angle = kargs['angle']
-        if 'dipole_cutoff' in kargs: self.dipole_cutoff = kargs['dipole_cutoff']
-        if 'lj_cutoff' in kargs: self.lj_cutoff = kargs['lj_cutoff']
-        if 'lj_parameters' in kargs: self.lj_parameters = kargs['lj_parameters']
-        if 'walls' in kargs: self.walls = kargs['walls']
+        permeability = (4e5*np.pi)*ureg.pN/ureg.A**2 #pN/A^2
         
-class sim():
-    def __init__(self,**kargs):
-        """
-        Optional keyword parameters are:
-        temperature (=300K)
-        space (={"region":[200,200,20],"boundary":["s","s","f"]})
-        file_name (= test)
-        dir (="")
-        stamp_time (=False) this parameter determines if the file_name is modified by a timestamp.
-            This is important to prevent overwriting experimetns
-        """
-        self.temperature = 300
-        self.space = {"region":[200,200,20],"boundary":["s","s","f"],"walls":[False,False,False]}
-        self.file_name = "test"
-        self.dir_name = ""
-        self.stamp_time = False
+        #What is lammps units?
+                
+        self.magnitude = magnitude
+        self.H_magnitude = (magnitude.to(ureg.mT)/permeability)*1e9/2.99e8 #mT to lammps units
+        self.frequency = frequency.to(ureg.MHz)
+        self.angle = angle.to(ureg.rad)#degrees to radians
+                
+        self.fieldx = "v_Bmag*sin(v_omega*time)*sin(v_theta)"
+        self.fieldy = "v_Bmag*cos(v_omega*time)*sin(v_theta)"
+        self.fieldz = "v_Bmag*cos(v_theta)"
         
-        if 'temperature' in kargs: self.temperature = kargs['temperature']
-        if 'space' in kargs: self.space = kargs['space']
-        if 'file_name' in kargs: self.file_name = kargs['file_name']
-        if 'dir_name' in kargs: self.dir_name = kargs['dir_name']
-        if 'stamp_time' in kargs: self.stamp_time = kargs['stamp_time']
-            
-        if len(self.space["region"])==3:
-            self.space["region"] = [p*s/2 for s in self.space["region"] for p in [-1,1]]
-            
-        if 'walls' not in self.space:
-            self.space["walls"]=[False,False,True]
+    def create_string(self):
+        self.variable_def = st.Template("""
+variable Bmag atom $magnitude
+variable omega atom $omega
+variable theta atom $theta
+
+variable fieldx atom $fieldx
+variable fieldy atom $fieldy
+variable fieldz atom $fieldz
+""").substitute(
+                magnitude = self.H_magnitude.magnitude,
+                omega = self.frequency.magnitude*2*np.pi,
+                theta = self.angle.magnitude,
+                fieldx = self.fieldx,
+                fieldy = self.fieldy,
+                fieldz = self.fieldz
+                )
+        
+        self
+        self.fix_def = """
+fix 	4 Atoms setdipole v_fieldx v_fieldy v_fieldz 
+"""
+                   

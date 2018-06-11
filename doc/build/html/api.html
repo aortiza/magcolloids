@@ -16,7 +16,7 @@
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="prev" title="Is there a nematic dimer phase at \(\theta=0\)?" href="SampleScript.html" />
+    <link rel="prev" title="Walkthrough" href="Walkthrough.html" />
    
   <link rel="stylesheet" href="_static/custom.css" type="text/css" />
   
@@ -60,6 +60,69 @@ Optional parameters are:
 </dd></dl>
 
 </div>
+<div class="section" id="parameter-classes">
+<h2>Parameter Classes<a class="headerlink" href="#parameter-classes" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="lammps2d.particles">
+<em class="property">class </em><code class="descclassname">lammps2d.</code><code class="descname">particles</code><span class="sig-paren">(</span><em>positions</em>, <em>radius=&lt;Quantity(2</em>, <em>'micrometer')&gt;</em>, <em>susceptibility=1</em>, <em>drag=&lt;Quantity(4000000.0</em>, <em>'piconewton * second / micrometer')&gt;</em>, <em>diffusion=None</em>, <em>temperature=None</em>, <em>density=&lt;Quantity(1000.0</em>, <em>'kilogram / meter ** 3')&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/lammps2d/parameters.html#particles"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#lammps2d.particles" title="Permalink to this definition">¶</a></dt>
+<dd><p>A type of particle to be simulated</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="lammps2d.field">
+<em class="property">class </em><code class="descclassname">lammps2d.</code><code class="descname">field</code><span class="sig-paren">(</span><em>magnitude=&lt;Quantity(10</em>, <em>'millitesla')&gt;</em>, <em>frequency=&lt;Quantity(0</em>, <em>'hertz')&gt;</em>, <em>angle=&lt;Quantity(0</em>, <em>'degree')&gt;</em>, <em>fieldx=None</em>, <em>fieldy=None</em>, <em>fieldz=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/lammps2d/parameters.html#field"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#lammps2d.field" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="class">
+<dt id="lammps2d.world">
+<em class="property">class </em><code class="descclassname">lammps2d.</code><code class="descname">world</code><span class="sig-paren">(</span><em>particles, temperature=&lt;Quantity(300, 'kelvin')&gt;, region=&lt;Quantity([200 200  20], 'micrometer')&gt;, boundaries=['s', 's', 'f'], walls=[False, False, True], dipole_cutoff=None, lj_cutoff=1, lj_parameters=[&lt;Quantity(0.01, 'micrometer ** 2 * picogram / microsecond ** 2')&gt;, 0.8908987181403393], **kargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/lammps2d/parameters.html#world"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#lammps2d.world" title="Permalink to this definition">¶</a></dt>
+<dd><p>Real world parameters like the temperature. Also the confining walls
+Sets world parameters, like temperture, region, dipole cutoff and such.</p>
+<p>the lj and dipole parameters are in units of radius.</p>
+<dl class="docutils">
+<dt>If the dipole_cutoff is not given, the program should calculate a default cutoff </dt>
+<dd>as the length when the field is reduced to a fraction of KbT. 
+.. to do:</dd>
+</dl>
+<dl class="method">
+<dt id="lammps2d.world.reset_seed">
+<code class="descname">reset_seed</code><span class="sig-paren">(</span><em>seed=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/lammps2d/parameters.html#world.reset_seed"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#lammps2d.world.reset_seed" title="Permalink to this definition">¶</a></dt>
+<dd><p>Resets the seed of the world object for it to be used again. If the seed parameter is used, the seed is set to that. If not, it is a random number between 1 and 1000000</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="simulation-class">
+<h2>Simulation Class<a class="headerlink" href="#simulation-class" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="lammps2d.sim">
+<em class="property">class </em><code class="descclassname">lammps2d.</code><code class="descname">sim</code><span class="sig-paren">(</span><em>file_name='test'</em>, <em>dir_name=''</em>, <em>stamp_time=False</em>, <em>particles=None</em>, <em>world=None</em>, <em>field=None</em>, <em>timestep=&lt;Quantity(0.001</em>, <em>'second')&gt;</em>, <em>framerate=&lt;Quantity(30</em>, <em>'hertz')&gt;</em>, <em>total_time=&lt;Quantity(60</em>, <em>'second')&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/lammps2d/simulation.html#sim"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#lammps2d.sim" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="lammps2d.sim.generate_scripts">
+<code class="descname">generate_scripts</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/lammps2d/simulation.html#sim.generate_scripts"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#lammps2d.sim.generate_scripts" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method generates the input script for the lammps simulation. 
+It accepts some options, which for now include:
+* (future) input_file: boolean, (False) which specifies if the input file is stored separatelly from the main script.</p>
+<blockquote>
+<div>This icreases readibility for large amounts of particles</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="lammps2d.sim.load">
+<code class="descname">load</code><span class="sig-paren">(</span><em>**kargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/lammps2d/simulation.html#sim.load"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#lammps2d.sim.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method creates a lazy read object. The option read_trj = True reads the whole trj file and returns the output</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="lammps2d.sim.run">
+<code class="descname">run</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/lammps2d/simulation.html#sim.run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#lammps2d.sim.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function runs an input script named filename in lammps. The input should be located in target_dir</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
 </div>
 
 
@@ -72,6 +135,8 @@ Optional parameters are:
   <ul>
 <li><a class="reference internal" href="#">API</a><ul>
 <li><a class="reference internal" href="#module-lammps2d">Support Functions</a></li>
+<li><a class="reference internal" href="#parameter-classes">Parameter Classes</a></li>
+<li><a class="reference internal" href="#simulation-class">Simulation Class</a></li>
 </ul>
 </li>
 </ul>
@@ -79,7 +144,7 @@ Optional parameters are:
 <h3>Related Topics</h3>
 <ul>
   <li><a href="index.html">Documentation overview</a><ul>
-      <li>Previous: <a href="SampleScript.html" title="previous chapter">Is there a nematic dimer phase at <span class="math notranslate">\(\theta=0\)</span>?</a></li>
+      <li>Previous: <a href="Walkthrough.html" title="previous chapter">Walkthrough</a></li>
   </ul></li>
 </ul>
 </div>

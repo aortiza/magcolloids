@@ -9,5 +9,5 @@ Walkthrough
    :maxdepth: 1
    :caption: The following is an example notebook:
    
-   SampleScript
    Walkthrough
+   
