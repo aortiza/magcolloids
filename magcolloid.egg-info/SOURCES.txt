@@ -1,0 +1,10 @@
+setup.py
+magcolloid/__init__.py
+magcolloid/parameters.py
+magcolloid/simulation.py
+magcolloid/support.py
+magcolloid.egg-info/PKG-INFO
+magcolloid.egg-info/SOURCES.txt
+magcolloid.egg-info/dependency_links.txt
+magcolloid.egg-info/requires.txt
+magcolloid.egg-info/top_level.txt

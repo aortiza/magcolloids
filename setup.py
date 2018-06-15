@@ -13,10 +13,13 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/aortiza/magcolloid",
     packages=setuptools.find_packages(),
-    install_requires = ['numpy','scipy','pandas','matplotlib','ureg','jsonpickle']
+    install_requires = ['numpy','scipy','pandas','matplotlib','pint','jsonpickle'],
     classifiers=(
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
-        "Operating System :: Windows, MacOS X(intel), Linux",
+        "Development Status :: 3 - Alpha",
+        "Operating System :: Microsoft :: Windows",
+        "Operating System :: MacOS :: MacOS X",
+        "Operating System :: Unix",
     ),
 )
