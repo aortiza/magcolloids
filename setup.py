@@ -1,11 +1,10 @@
 import setuptools
-
 with open("Readme.md","r") as fh:
     long_description = fh.read()
     
 setuptools.setup(
     name="magcolloid",
-    version="0.3.6",
+    version="0.3.7",
     author="Antonio Ortiz-Ambriz",
     author_email="aortiza@gmail.com",
     description="A set of routines to interface with lammps and setup simulations of magnetic colloidal particles",
@@ -14,6 +13,7 @@ setuptools.setup(
     url="https://github.com/aortiza/magcolloid",
     packages=setuptools.find_packages(),
     install_requires = ['numpy','scipy','pandas','matplotlib','pint','jsonpickle'],
+    include_package_data=True,
     classifiers=(
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
@@ -21,6 +21,5 @@ setuptools.setup(
         "Operating System :: Microsoft :: Windows",
         "Operating System :: MacOS :: MacOS X",
         "Operating System :: Unix",
-    ),
-    include_package_data=True
+    )
 )

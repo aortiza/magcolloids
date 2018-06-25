@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: magcolloid
-Version: 0.3.6
+Version: 0.3.7
 Summary: A set of routines to interface with lammps and setup simulations of magnetic colloidal particles
 Home-page: https://github.com/aortiza/magcolloid
 Author: Antonio Ortiz-Ambriz

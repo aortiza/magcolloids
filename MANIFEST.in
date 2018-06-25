@@ -1,3 +1,4 @@
-include lammps_executables/lmp_mac
-include lammps_executables/lmp_serial
-include lammps_executables/lmp_mingw64
+include magcolloid/lammps_executables/*
+include README.md
+include setup.py
+include LICENCE
