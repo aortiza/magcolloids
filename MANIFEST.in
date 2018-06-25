@@ -1,0 +1,3 @@
+include lammps_executables/lmp_mac
+include lammps_executables/lmp_serial
+include lammps_executables/lmp_mingw64
