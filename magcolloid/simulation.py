@@ -99,6 +99,7 @@ run 	$runtm
         f.write(self.field.variable_def)
         
         f.write(self.world.integrator_def)
+        f.write(self.world.enforce2d)
         f.write(self.world.gravity_def)
         f.write(self.world.wall_def)
         f.write(self.field.fix_def)
@@ -142,8 +143,8 @@ run 	$runtm
         elif sys.platform=='linux':
             lmp_exec = os.path.join(exec_paths,"lmp_serial")
         else:
-            lmp_exec = os.path.join(exec_paths,"lmp_mingw64-native.exe")
-
+            lmp_exec = os.path.join(exec_paths,"lmp_mingw64.exe")
+        
         os.system(lmp_exec + " -in "+self.script_name)
     
     def load(self,read_trj = False):
@@ -202,6 +203,7 @@ class trj_lazyread():
             for i in range(0,int(self.T[time]["atoms"])):
                 line = d.readline()
                 line = line.replace("-1.#IND","-NaN").replace("1.#IND","NaN")
+                line = line.replace("-1.#QNAN","-NaN").replace("1.#QNAN","NaN")
                 linearray = np.array([float(i) for i in line.split(' ') if i!='\n'])
                 for i,out in enumerate(self.columns[1:]):
                     Atoms[out][j] = linearray[i]

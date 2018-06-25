@@ -175,10 +175,11 @@ class world():
     def __init__(self, particles,
                 traps = None,
                 temperature = 300*ureg.K, region = [200,200,20]*ureg.um,
-                boundaries = ["s","s","f"], walls=[False,False,True],
+                boundaries = ["s","s","p"], walls=[False,False,True],
                 dipole_cutoff = 200*ureg.um, lj_cutoff = 1, 
                 lj_parameters = [1e-2*ureg.pg*ureg.um**2/ureg.us**2, 2**(-1/6)],
-                gravity = 9.8*ureg.m/ureg.s**2):
+                gravity = 9.8*ureg.m/ureg.s**2,
+                enforce2d = False):
                 
         """ Real world parameters like the temperature. Also the confining walls
         Sets world parameters, like temperture, region, dipole cutoff and such.
@@ -205,6 +206,7 @@ class world():
         self.lj_cutoff = lj_cutoff # sigma
         self.lj_parameters = lj_parameters #[pg um^2 us^-2,sigma]
         self.gravity = gravity.to(ureg.um/ureg.us**2)
+        self.enforce2d = enforce2d
                 
         if len(self.region)==3:
             self.region = [p*s/2 for s in self.region for p in [-1,1]]
@@ -212,10 +214,15 @@ class world():
                 
     def create_string(self):
         
+        if self.enforce2d:
+            dimension = "dimension 2"
+        else:
+            ""
         self.world_def = st.Template("""
 units micro
 atom_style hybrid sphere paramagnet bond
 boundary $x_bound $y_bound $z_bound
+$dimension
 neighbor 4.0 nsq
 pair_style lj/cut/dipole/cut $lj_cut $dpl_cut
 bond_style biharmonic
@@ -225,7 +232,8 @@ bond_style biharmonic
                                 y_bound = self.boundaries[1],
                                 z_bound = self.boundaries[2],
                                 lj_cut = self.lj_cutoff,
-                                dpl_cut = self.dipole_cutoff.magnitude
+                                dpl_cut = self.dipole_cutoff.magnitude,
+                                dimension = dimension
                                 )
         
         self.region_def = st.Template("""
@@ -320,8 +328,13 @@ fix 	1 Atoms bd $temp $damp $seed
             ).to(ureg.pg*ureg.um/ureg.us**2)
         
         self.gravity_def = st.Template("""
-fix     2 Atoms addforce 0 0 $mg
+fix     3 Atoms addforce 0 0 $mg
 """).substitute(mg = -self.gravity.magnitude) # pg*um/(us^2) (I hope)
+        
+        if self.enforce2d:
+            self.enforce2d = "\nfix 	2 all enforce2d\n"
+        else:
+            self.enforce2d = ""
         
         if any(self.walls):
             walls = [
