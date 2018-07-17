@@ -209,6 +209,7 @@ class trj_lazyread():
                     Atoms[out][j] = linearray[i]
                 j=j+1;
         return Atoms
+        
     def read_trj(self,*args):
         """reads a trj from the file and returns a pandas object. 
         accepts as first argument a slice object, which allows to read subsets of the file"""
@@ -222,11 +223,13 @@ class trj_lazyread():
 
         accum = pd.DataFrame(index=[],columns=columns)
 
-        for i in frames:
-            frame_data = self.read_frame(i)
+        def read_entry(i):
+            frame_data = lz.read_frame(i)
             entry = pd.DataFrame(data=frame_data)
             entry['frame']=i
-            accum = accum.append(entry)
+            return(entry)
+
+        accum = pd.concat([read_entry(i) for i in frames])
 #            for part in frame_data: 
 #                data = [np.array([i]+list(part))]
 #                entry = pd.DataFrame(data=data,columns=columns)
