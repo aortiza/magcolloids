@@ -224,7 +224,7 @@ class trj_lazyread():
         accum = pd.DataFrame(index=[],columns=columns)
 
         def read_entry(i):
-            frame_data = lz.read_frame(i)
+            frame_data = self.read_frame(i)
             entry = pd.DataFrame(data=frame_data)
             entry['frame']=i
             return(entry)
