@@ -4,7 +4,7 @@ with open("Readme.md","r") as fh:
     
 setuptools.setup(
     name="magcolloid",
-    version="0.3.7",
+    version="0.3.8+",
     author="Antonio Ortiz-Ambriz",
     author_email="aortiza@gmail.com",
     description="A set of routines to interface with lammps and setup simulations of magnetic colloidal particles",
