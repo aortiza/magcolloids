@@ -217,7 +217,7 @@ class world():
         if self.enforce2d:
             dimension = "dimension 2"
         else:
-            ""
+            dimension = ""
         self.world_def = st.Template("""
 units micro
 atom_style hybrid sphere paramagnet bond
@@ -328,11 +328,11 @@ fix 	1 Atoms bd $temp $damp $seed
             ).to(ureg.pg*ureg.um/ureg.us**2)
         
         self.gravity_def = st.Template("""
-fix     3 Atoms addforce 0 0 $mg
+fix     2 Atoms addforce 0 0 $mg
 """).substitute(mg = -self.gravity.magnitude) # pg*um/(us^2) (I hope)
         
         if self.enforce2d:
-            self.enforce2d = "\nfix 	2 all enforce2d\n"
+            self.enforce2d = "\nfix 	4 all enforce2d\n"
         else:
             self.enforce2d = ""
         
@@ -408,6 +408,6 @@ variable fieldz atom $fieldz
         
         self
         self.fix_def = """
-fix 	4 Atoms setdipole v_fieldx v_fieldy v_fieldz 
+fix 	3 Atoms setdipole v_fieldx v_fieldy v_fieldz 
 """
                    

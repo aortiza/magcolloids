@@ -99,10 +99,10 @@ run 	$runtm
         f.write(self.field.variable_def)
         
         f.write(self.world.integrator_def)
-        f.write(self.world.enforce2d)
         f.write(self.world.gravity_def)
         f.write(self.world.wall_def)
         f.write(self.field.fix_def)
+        f.write(self.world.enforce2d)
         
         f.write(self.run_def)
         f.close
