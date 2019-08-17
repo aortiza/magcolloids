@@ -3,19 +3,19 @@ API
 
 Support Functions
 -----------------
-.. automodule:: lammps2d
+.. automodule:: magcolloids
 	:members: initial_setup, animate_trj
 	
 Parameter Classes
 ------------------
-.. autoclass:: lammps2d.particles
+.. autoclass:: magcolloids.particles
 
-.. autoclass:: lammps2d.field
+.. autoclass:: magcolloids.field
 	
-.. autoclass:: lammps2d.world
+.. autoclass:: magcolloids.world
 	:members: reset_seed
 	
 Simulation Class
 ------------------
-.. autoclass:: lammps2d.sim
+.. autoclass:: magcolloids.sim
 	:members: generate_scripts, run, load
