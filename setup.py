@@ -3,8 +3,8 @@ with open("Readme.md","r") as fh:
     long_description = fh.read()
     
 setuptools.setup(
-    name="magcolloid",
-    version="0.3.9",
+    name="magcolloids",
+    version="0.3.10",
     author="Antonio Ortiz-Ambriz",
     author_email="aortiza@gmail.com",
     description="A set of routines to interface with lammps and setup simulations of magnetic colloidal particles",
