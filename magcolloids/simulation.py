@@ -100,10 +100,10 @@ run 	$runtm
         f.write("\n### ---Fixes--- ###\n")    
         f.write(self.field.variable_def)
         
+        f.write(self.field.fix_def)
         f.write(self.world.integrator_def)
         f.write(self.world.gravity_def)
         f.write(self.world.wall_def)
-        f.write(self.field.fix_def)
         f.write(self.world.enforce2d)
         
         f.write(self.run_def)
@@ -122,12 +122,14 @@ run 	$runtm
         
         
         if not self.traps is None:
-            f.write("\nBonds\n\n")
-            f.write(self.traps.bond_def)
+            if self.traps.cutoff == np.Inf*ureg.um:
+                f.write("\nBonds\n\n")
+                f.write(self.traps.bond_def)
         
         if not self.traps is None:
-            f.write("\nBond Coeffs\n\n")
-            f.write(self.traps.bond_params)
+            if self.traps.cutoff == np.Inf*ureg.um:
+                f.write("\nBond Coeffs\n\n")
+                f.write(self.traps.bond_params)
             
         f.write("\nPairIJ Coeffs\n\n")
         f.write(self.world.interaction_def)
