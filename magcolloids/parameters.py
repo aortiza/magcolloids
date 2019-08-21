@@ -415,7 +415,7 @@ fix     $fx_no Atoms addforce 0 0 $mg
         
         fx_no +=1
         if self.enforce2d:
-            self.enforce2d = "\nfix 	%u all enforce2d\n"%fx_no
+            self.enforce2d = "\nfix 	%u all enforce2d_bd\n"%fx_no
         else:
             self.enforce2d = ""
 
