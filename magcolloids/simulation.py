@@ -156,12 +156,12 @@ run 	$runtm
         self.lmp_exec = lmp_exec
         os.system(lmp_exec + " -in "+self.script_name)
     
-    def load(self,read_trj = False):
+    def load(self,read_trj = False,sl = slice(0,-1,1)):
         """This method creates a lazy read object. The option read_trj = True reads the whole trj file and returns the output"""
         self.lazy_read = trj_lazyread(self.output_name,self.output)
         
         if read_trj:
-            trj = self.lazy_read.read_trj()
+            trj = self.lazy_read[sl]
             trj['t']=trj.index.get_level_values('frame')*self.timestep.to(ureg.s).magnitude
             frames = trj.index.get_level_values('frame').unique()
             trj.index.set_levels(range(len(frames)), level = "frame", inplace=True)
