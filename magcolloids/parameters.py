@@ -275,8 +275,8 @@ class world():
         
         if not self.traps is None:
             trap_types = len(self.traps)
-            total_bond_traps = sum([len(t.positions) for t in self.traps if t.cutoff==np.Inf*ureg.um])
-            total_pair_traps = sum([len(t.positions) for t in self.traps if t.cutoff<np.Inf*ureg.um])
+            total_bond_traps = sum([len(t.positions) for t in self.traps if t.cutoff==np.Inf*t.cutoff.units])
+            total_pair_traps = sum([len(t.positions) for t in self.traps if t.cutoff<np.Inf*t.cutoff.units])
         else:
             trap_types = 0
             total_traps = 0
