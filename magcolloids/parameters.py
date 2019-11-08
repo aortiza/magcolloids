@@ -76,8 +76,7 @@ class particles():
                     for ix,c in zip(self.atoms_id+1,self.positions.magnitude)
             ]
         )+"\n"
-        
-        
+                
 class bistable_trap():
     """ A bistable potential """
     def __init__(self, 
@@ -90,7 +89,8 @@ class bistable_trap():
                 distance = 10*ureg.um,
                 height = 4 * ureg.pN*ureg.nm,
                 stiffness = 1.2e-4 * ureg.pN/ureg.nm,
-                height_spread = 0):
+                height_spread = 0,
+                cutoff = np.Inf):
         """
         Initializes a group of bistable traps with the same parameters.
         The required arguments are: 
@@ -122,6 +122,7 @@ class bistable_trap():
         self.bonds_id = bonds_id
           
         self.atom_type = atom_type
+        self.cutoff = cutoff
         
     def create_string(self):
         
@@ -150,27 +151,44 @@ class bistable_trap():
                         self.bonds.atoms_id+1)
             ]
         )+"\n"
+        if self.cutoff == np.inf*ureg.um:
+            # The bonds are defined as a conection from a trap, to an atom. the bond type is equal to the bond id (bond_ix) because every bond is unique. Only that way can disorder be introduced
+            
+            self.bond_def = "\n".join([st.Template(
+                """$bond_ix $bond_type $trap_ix $atom_ix""").substitute(
+                    bond_ix = b,
+                    bond_type = b,
+                    trap_ix = i,
+                    atom_ix = j) for b,i,j in zip(self.bonds_id+1,self.atoms_id+1,self.bonds.atoms_id+1)]
+            )+"\n"
+            
+            # The bond params are defined by bond type. These determine the stiffness and height of the traps
+            height_disorder = self.height *(np.random.randn(len(self.atoms_id))*self.height_spread+1)
+            height_disorder = height_disorder.to(ureg.pg*ureg.um**2/ureg.us**2).magnitude
         
-        # The bonds are defined as a conection from a trap, to an atom. the bond type is equal to the bond id (bond_ix) because every bond is unique. Only that way can disorder be introduced
-        self.bond_def = "\n".join([st.Template(
-            """$bond_ix $bond_type $trap_ix $atom_ix""").substitute(
-                bond_ix = b,
-                bond_type = b,
-                trap_ix = i,
-                atom_ix = j) for b,i,j in zip(self.bonds_id+1,self.atoms_id+1,self.bonds.atoms_id+1)]
-        )+"\n"
-        
-        # The bond params are defined by bond type. These determine the stiffness and height of the traps
-        height_disorder = self.height *(np.random.randn(len(self.atoms_id))*self.height_spread+1)
-        height_disorder = height_disorder.to(ureg.pg*ureg.um**2/ureg.us**2).magnitude
-        
-        self.bond_params = "\n".join([st.Template(
-            """$bond_type  $stiffness $height_energy""").substitute(
-                    bond_type = i, stiffness = self.stiffness.magnitude, height_energy = h
-                ) for i,h in zip(self.bonds_id+1,height_disorder)])+"\n"
-                
-                
-                
+            self.bond_params = "\n".join([st.Template(
+                """$bond_type  $stiffness $height_energy""").substitute(
+                        bond_type = i, stiffness = self.stiffness.magnitude, height_energy = h
+                    ) for i,h in zip(self.bonds_id+1,height_disorder)])+"\n"
+            # If there is no cuttoff, the trap doesn't have a pair interaction. 
+            self.pair_def = "\n".join([st.Template(
+                """$atom_type $trap_type none""").substitute(
+                    atom_type = self.bonds.atom_type+1,
+                    trap_type = self.atom_type+1,
+                    k_outer = self.stiffness.magnitude,
+                    k_inner = self.height.to(ureg.pg*ureg.um**2/ureg.us**2).magnitude,
+                    cutoff = self.cutoff)])
+                    
+        else: 
+            # If there is a cuttoff, the trap is defined as a pair interaction between types. For the moment this means the disorder in the height is ignored. 
+            self.pair_def = "\n".join([st.Template(
+                """$atom_type $trap_type biharmonic $k_outer $k_inner $cutoff""").substitute(
+                    atom_type = self.bonds.atom_type+1,
+                    trap_type = self.atom_type+1,
+                    k_outer = self.stiffness.magnitude,
+                    k_inner = self.height.to(ureg.pg*ureg.um**2/ureg.us**2).magnitude,
+                    cutoff = self.cutoff.to(ureg.um).magnitude)])            
+
 class world():
     def __init__(self, particles,
                 traps = None,
@@ -197,7 +215,22 @@ class world():
             self.traps=[traps]
         else:
             self.traps=traps
-                    
+        
+        traps = self.traps
+        if traps is None:
+            cut_bh = 0
+        else:    
+            lengths = np.array([t.distance.to(ureg.um).magnitude for t in traps])
+            cutoffs = np.array([t.cutoff.to(ureg.um).magnitude for t in traps])
+            cut_bh = lengths+cutoffs
+            if cut_bh[cut_bh!=np.inf].size==0:
+                # no finite traps. cutoff is 0 because traps are defined through bonds, not pairs.
+                cut_bh = 0
+            else:
+                # some finite traps. Global cutoff is the maximum cutoff possible. 
+                cut_bh = np.max(cut_bh[cut_bh!=np.inf])
+                
+        self.bh_cutoff = cut_bh
         self.temperature = temperature
         self.region = region
         self.boundaries = boundaries
@@ -212,17 +245,18 @@ class world():
             self.region = [p*s/2 for s in self.region for p in [-1,1]]
         
     
-    def create_wall_string(self):
+    def create_wall_string(self,fx_no):
     
         if any(self.walls):
             walls = [
                 "%slo EDGE $lj_eps $lj_sgm  $lj_cut %shi EDGE $lj_eps $lj_sgm  $lj_cut "%(r,r)
                 if w else "" for (r,w) in zip(["x","y","z"],self.walls)]
-            walls = "fix 	3 Atoms wall/lj126 "+"".join(walls)+" \n"
+            walls = "fix 	$fx_no Atoms wall/lj126 "+"".join(walls)+" \n"
         else: 
             walls = ""
             
         return st.Template(walls).substitute(
+                    fx_no=fx_no,
                     lj_eps=self.lj_parameters[0].magnitude,
                     lj_sgm=((self.particles[0].radius)*self.lj_parameters[1]).magnitude,
                     lj_cut=((self.particles[0].radius)*self.lj_cutoff).magnitude,
@@ -235,23 +269,56 @@ class world():
             dimension = "dimension 2"
         else:
             dimension = ""
-        self.world_def = st.Template("""
+            
+        particle_types = len(self.particles)
+        total_particles = sum([len(p.positions) for p in self.particles])
+        
+        if not self.traps is None:
+            trap_types = len(self.traps)
+            total_bond_traps = sum([len(t.positions) for t in self.traps if t.cutoff==np.Inf*t.cutoff.units])
+            total_pair_traps = sum([len(t.positions) for t in self.traps if t.cutoff<np.Inf*t.cutoff.units])
+        else:
+            trap_types = 0
+            total_traps = 0
+        
+        if total_pair_traps>0:  
+            self.world_def = st.Template("""
 units micro
 atom_style hybrid sphere paramagnet bond
 boundary $x_bound $y_bound $z_bound
 $dimension
 neighbor 4.0 nsq
-pair_style lj/cut/dipole/cut $lj_cut $dpl_cut
+pair_style hybrid biharmonic $bh_cut lj/cut/dipole/cut $lj_cut $dpl_cut
 bond_style biharmonic
 """)
-        self.world_def = self.world_def.substitute(
+            self.world_def = self.world_def.substitute(
                                 x_bound = self.boundaries[0],
                                 y_bound = self.boundaries[1],
                                 z_bound = self.boundaries[2],
+                                bh_cut = self.bh_cutoff,
                                 lj_cut = self.lj_cutoff,
                                 dpl_cut = self.dipole_cutoff.magnitude,
                                 dimension = dimension
                                 )
+        else:
+            self.world_def = st.Template("""
+units micro
+atom_style hybrid sphere paramagnet bond
+boundary $x_bound $y_bound $z_bound
+$dimension
+neighbor 4.0 nsq
+pair_style hybrid lj/cut/dipole/cut $lj_cut $dpl_cut
+bond_style biharmonic
+""")
+            self.world_def = self.world_def.substitute(
+                                            x_bound = self.boundaries[0],
+                                            y_bound = self.boundaries[1],
+                                            z_bound = self.boundaries[2],
+                                            bh_cut = self.bh_cutoff,
+                                            lj_cut = self.lj_cutoff,
+                                            dpl_cut = self.dipole_cutoff.magnitude,
+                                            dimension = dimension
+                                            )
         
         self.region_def = st.Template("""
 $total_atoms atoms
@@ -263,21 +330,11 @@ $spy1 $spy2 ylo yhi
 $spz1 $spz2 zlo zhi
         """)
         
-        particle_types = len(self.particles)
-        total_particles = sum([len(p.positions) for p in self.particles])
-        
-        if not self.traps is None:
-            trap_types = len(self.traps)
-            total_traps = sum([len(t.positions) for t in self.traps])
-        else:
-            trap_types = 0
-            total_traps = 0
-        
             
         self.region_def = self.region_def.substitute(
-            total_atoms = total_particles+total_traps,
+            total_atoms = total_particles+total_bond_traps+total_pair_traps,
             atom_types = particle_types+trap_types,
-            bonds = total_traps,
+            bonds = total_bond_traps,
             spx1 = self.region[0].magnitude,
             spx2 = self.region[1].magnitude,
             spy1 = self.region[2].magnitude,
@@ -293,13 +350,16 @@ $spz1 $spz2 zlo zhi
                 dp_cut=self.dipole_cutoff.magnitude
             )
             
-        interaction_def = st.Template(
-            """$type_i $type_j $lj_eps $lj_sgm $lj_cut $dp_cut""")
+        lj_interaction_def = st.Template(
+            """$type_i $type_j lj/cut/dipole/cut $lj_eps $lj_sgm $lj_cut $dp_cut""")
+        
+        null_interaction_def = st.Template(
+            """$type_i $type_j none""")
                  
         self.interaction_def = []   
         for i,pi in enumerate(self.particles):
             for j,pj in enumerate(self.particles[i:]):
-                self.interaction_def.append(interaction_def.substitute(
+                self.interaction_def.append(lj_interaction_def.substitute(
                         type_i = pi.atom_type+1, type_j = pj.atom_type+1,
                         lj_eps=self.lj_parameters[0].magnitude,
                         lj_sgm=((pj.radius+pi.radius) * self.lj_parameters[1]).magnitude,
@@ -309,16 +369,17 @@ $spz1 $spz2 zlo zhi
         for i,pi in enumerate(self.particles):
             if self.traps is not None:
                 for j,tj in enumerate(self.traps):
-                    self.interaction_def.append(interaction_def.substitute(
-                            type_i = pi.atom_type+1, type_j = tj.atom_type+1,
-                            lj_eps=0, lj_sgm=0,lj_cut=0, dp_cut = 0))
+                    if tj.cutoff == np.inf*ureg.um:
+                        self.interaction_def.append(null_interaction_def.substitute(
+                            type_i = pi.atom_type+1, type_j = tj.atom_type+1))
+                    else:
+                        self.interaction_def.append(tj.pair_def)
 
         if self.traps is not None:
             for i,ti in enumerate(self.traps):
                 for j,tj in enumerate(self.traps[i:]):
-                    self.interaction_def.append(interaction_def.substitute(
-                            type_i = ti.atom_type+1, type_j = tj.atom_type+1,
-                            lj_eps=0, lj_sgm=0,lj_cut=0, dp_cut = 0))
+                    self.interaction_def.append(null_interaction_def.substitute(
+                            type_i = ti.atom_type+1, type_j = tj.atom_type+1))
                             
         self.interaction_def = "\n".join(self.interaction_def)
             
@@ -338,24 +399,28 @@ mass * 1
         
         self.seed = np.random.randint(1000000)
         
+        fx_no = 2
         self.integrator_def = st.Template("""
-fix 	1 Atoms bd $temp $damp $seed 
-""").substitute(temp=self.temperature.magnitude, damp=damp.magnitude, seed=self.seed)
+fix 	$fx_no Atoms bd $temp $damp $seed 
+""").substitute(fx_no = fx_no,temp=self.temperature.magnitude, damp=damp.magnitude, seed=self.seed)
         
+        fx_no +=1
         self.gravity_force = (
             self.particles[0].mass*(self.gravity)
             ).to(ureg.pg*ureg.um/ureg.us**2)
         
         self.gravity_def = st.Template("""
-fix     2 Atoms addforce 0 0 $mg
-""").substitute(mg = -self.gravity_force.magnitude) # pg*um/(us^2) (I hope)
+fix     $fx_no Atoms addforce 0 0 $mg
+""").substitute(fx_no = fx_no, mg = -self.gravity_force.magnitude) # pg*um/(us^2) (I hope)
         
+        fx_no +=1
         if self.enforce2d:
-            self.enforce2d = "\nfix 	4 all enforce2d\n"
+            self.enforce2d = "\nfix 	%u all enforce2d_bd\n"%fx_no
         else:
             self.enforce2d = ""
-        
-        self.wall_def = self.create_wall_string()
+
+        fx_no +=1
+        self.wall_def = self.create_wall_string(fx_no)
         
     def reset_seed(self, seed = None):
         """ Resets the seed of the world object for it to be used again. If the seed parameter is used, the seed is set to that. If not, it is a random number between 1 and 1000000 """
@@ -425,6 +490,6 @@ variable fieldz atom $fieldz
         
         self
         self.fix_def = """
-fix 	4 Atoms setdipole v_fieldx v_fieldy v_fieldz %u
+fix 	1 Atoms setdipole v_fieldx v_fieldy v_fieldz %u
 """%self.multibody_iter
                    
