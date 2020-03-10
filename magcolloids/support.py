@@ -741,13 +741,13 @@ def nematic_order(dim,director=False):
         director = [np.cos(theta_0[max_order]),np.sin(theta_0[max_order])]
         return S[max_order], director
         
-def load_trj(name,slc = None):
+def load_trj(name,slc = None, output = ["x","y","z"]):
     from . import simulation as sim
     
     if slc is None:
         slc = slice(0,-1,1)
         
-    lz_trj = sim.trj_lazyread(name,["x","y","z","mux","muy","muz","fx","fy"])
+    lz_trj = sim.trj_lazyread(name, output)
     trj = lz_trj[slc].filter(["x","y","z"])
         
     bounds = lz_trj.get_bounds()
