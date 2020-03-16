@@ -1,4 +1,4 @@
-lammps2d/__pycache__/*
-
+magcolloids/__pycache__/*
+magcolloids/lammps_executables/log.lammps
 *.DS_Store
 *log.lammps
