@@ -1,3 +1,4 @@
 lammps2d/__pycache__/*
 
 *.DS_Store
+*log.lammps
