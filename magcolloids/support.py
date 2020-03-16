@@ -11,7 +11,7 @@ def initial_setup(n_of_particles, packing = 0.3, height = 4, radius=1.4):
     a region where these particles are enclosed with a packing fraction "packing"
     The particles are initially set in a square array, as far from each other as possible.
     """
-    part_in_edge = np.round(np.sqrt(n_of_particles))
+    part_in_edge = int(np.round(np.sqrt(n_of_particles)))
     n_of_particles = part_in_edge**2
 
     area_particle = n_of_particles*radius**2*np.pi
