@@ -11,7 +11,7 @@ def initial_setup(n_of_particles, packing = 0.3, height = 4, radius=1.4):
     a region where these particles are enclosed with a packing fraction "packing"
     The particles are initially set in a square array, as far from each other as possible.
     """
-    part_in_edge = np.round(np.sqrt(n_of_particles))
+    part_in_edge = int(np.round(np.sqrt(n_of_particles)))
     n_of_particles = part_in_edge**2
 
     area_particle = n_of_particles*radius**2*np.pi
@@ -554,7 +554,7 @@ def unwrap_dimers(p0,p1,region,boundary_cond = None, tol=False):
     center = p0+direction/2
     
     return center, direction
-        
+    
 def draw_dim(dim,sim,iframe=-1,ax=False):
     """ 
     displays a trajectory statically. 
@@ -698,10 +698,7 @@ def animate_dim(dim ,sim, ax=False, verb=False, start=0, end=False, step = 1, sp
 
     return anim
     
-def save_dimer_array(dim,filename,directory):
-    """Converts dimers to a saveable array"""
-    import os
-
+def dimers_array(dim):
     dim["member_a"] = np.array([list(m) for m in dim.members])[:,0]
     dim["member_b"] = np.array([list(m) for m in dim.members])[:,1]
 
@@ -712,8 +709,13 @@ def save_dimer_array(dim,filename,directory):
     dim["dx"] = np.array([m for m in dim.direction])[:,0]
     dim["dy"] = np.array([m for m in dim.direction])[:,1]
     dim["dz"] = np.array([m for m in dim.direction])[:,2]
+    return dim.filter(["member_a","member_b","x","y","z","dx","dy","dz"])
 
-    dim_store = dim.filter(["member_a","member_b","x","y","z","dx","dy","dz"])
+def save_dimer_array(dim,filename,directory):
+    """Converts dimers to a saveable array"""
+    import os
+
+    dim_store = dimers_to_array(dim)
     
     dim_store.to_csv(os.path.join(directory,filename)+"_dimers.dat",sep = "\t")
     
@@ -739,13 +741,13 @@ def nematic_order(dim,director=False):
         director = [np.cos(theta_0[max_order]),np.sin(theta_0[max_order])]
         return S[max_order], director
         
-def load_trj(name,slc = None):
+def load_trj(name,slc = None, output = ["x","y","z"]):
     from . import simulation as sim
     
     if slc is None:
         slc = slice(0,-1,1)
         
-    lz_trj = sim.trj_lazyread(name,["x","y","z","mux","muy","muz","fx","fy"])
+    lz_trj = sim.trj_lazyread(name, output)
     trj = lz_trj[slc].filter(["x","y","z"])
         
     bounds = lz_trj.get_bounds()

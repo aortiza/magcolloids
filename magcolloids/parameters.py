@@ -272,14 +272,14 @@ class world():
             
         particle_types = len(self.particles)
         total_particles = sum([len(p.positions) for p in self.particles])
-        
         if not self.traps is None:
             trap_types = len(self.traps)
             total_bond_traps = sum([len(t.positions) for t in self.traps if t.cutoff==np.Inf*t.cutoff.units])
             total_pair_traps = sum([len(t.positions) for t in self.traps if t.cutoff<np.Inf*t.cutoff.units])
         else:
             trap_types = 0
-            total_traps = 0
+            total_bond_traps = 0
+            total_pair_traps = 0
         
         if total_pair_traps>0:  
             self.world_def = st.Template("""
