@@ -748,7 +748,7 @@ def load_trj(name,slc = None, output = ["x","y","z"]):
         slc = slice(0,-1,1)
         
     lz_trj = sim.trj_lazyread(name, output)
-    trj = lz_trj[slc].filter(["x","y","z"])
+    trj = lz_trj[slc].filter(["type","x","y","z"])
         
     bounds = lz_trj.get_bounds()
         
