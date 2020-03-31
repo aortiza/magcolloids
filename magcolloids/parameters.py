@@ -52,10 +52,11 @@ class particles():
         """ creates the strings that then are introduced into the lammps scripts"""
         
         density = self.mass/(4/3*np.pi*self.radius**3)
+        atom_string = ("atom id|type|x0|y0|z0|d|rho|m|mx|my|mz|chi|trap_id")
         
         ### This is the string pattern for a single atom. The colloid positions are left as a template, as well as the atom id. 
         self.atom_def = st.Template(
-            """$atom_ix\t $atom_type\t $center\t $diameter\t $density\t $moment\t $direction\t $susceptibility\t $trap_ix""").substitute(
+            """$atom_ix\t $atom_type\t $center\t $diameter\t $density\t $moment\t $direction\t $susceptibility\t $trap_ix #$string""").substitute(
                 atom_ix = "$atom_ix",
                 atom_type = self.atom_type+1,
                 center = "$x0\t $y0\t $z0",
@@ -65,6 +66,7 @@ class particles():
                 direction = "0\t 0\t 0",
                 susceptibility = self.susceptibility,
                 trap_ix = "$atom_trap",
+                string = atom_string
         )
         
         # Now we use the string pattern defined before, and define an instance for each trap.
@@ -90,7 +92,8 @@ class bistable_trap():
                 height = 4 * ureg.pN*ureg.nm,
                 stiffness = 1.2e-4 * ureg.pN/ureg.nm,
                 height_spread = 0,
-                cutoff = np.Inf):
+                cutoff = np.Inf*ureg.um,
+                velocity = None):
         """
         Initializes a group of bistable traps with the same parameters.
         The required arguments are: 
@@ -123,12 +126,15 @@ class bistable_trap():
           
         self.atom_type = atom_type
         self.cutoff = cutoff
+        self.velocity = velocity
         
     def create_string(self):
         
         # We first define the string pattern that defines a single trap
+        atom_string = ("trap id|type|x0|y0|z0|1|1|0|dx|dy|dz|0|atom_id")
+        
         self.atom_def = st.Template(
-            """  $atom_ix\t $atom_type\t $center\t $diameter\t $density\t $moment\t $direction\t $susceptibility\t $trap_ix""").substitute(
+            """$atom_ix\t $atom_type\t $center\t $diameter\t $density\t $moment\t $direction\t $susceptibility\t $trap_ix #$string """).substitute(
                 atom_ix = "$atom_ix",
                 atom_type = self.atom_type+1,
                 center = "$x0\t $y0\t $z0",
@@ -138,6 +144,7 @@ class bistable_trap():
                 direction = "$dx0\t $dy0\t $dz0",
                 susceptibility = 0,
                 trap_ix = "$ix",
+                string = atom_string
         )
         
         # Now we use the string pattern defined before, and define an instance for each trap.
@@ -187,7 +194,15 @@ class bistable_trap():
                     trap_type = self.atom_type+1,
                     k_outer = self.stiffness.magnitude,
                     k_inner = self.height.to(ureg.pg*ureg.um**2/ureg.us**2).magnitude,
-                    cutoff = self.cutoff.to(ureg.um).magnitude)])            
+                    cutoff = self.cutoff.to(ureg.um).magnitude)])          
+        
+        if self.velocity is not None:
+            self.velocity_fix = "fix		7 Traps move variable NULL NULL NULL v_vx v_vy v_vz"
+        else:
+            self.velocity_fix = "fix		7 Traps move variable NULL NULL NULL v_vx v_vy v_vz"
+            self.velocity = ""
+            
+        
 
 class world():
     def __init__(self, particles,
@@ -383,15 +398,24 @@ $spz1 $spz2 zlo zhi
                             
         self.interaction_def = "\n".join(self.interaction_def)
             
-        self.group_def = "\n".join([
+        #atom_group = "group Atoms type $particle_"
+        self.group_def = "\n"+"\n".join([
             st.Template(
-                """
-group Atoms type $particle_type
-mass * 1
-                """).substitute(
+                """group Atoms type $particle_type
+""").substitute(
                     particle_type = p.atom_type+1
                 ) for p in self.particles
             ])
+        if self.traps is not None:    
+            self.group_def += "\n".join([
+                st.Template(
+                    """group Traps type $particle_type
+""").substitute(
+                        particle_type = p.atom_type+1
+                        ) for p in self.traps
+                    ])
+            
+        self.group_def += """mass * 1\n"""
         
         damp = 1e-3*ureg.us
         # self.damp = diffusion*mass/(kb*self.temperature)
@@ -404,22 +428,23 @@ mass * 1
 fix 	$fx_no Atoms bd $temp $damp $seed 
 """).substitute(fx_no = fx_no,temp=self.temperature.magnitude, damp=damp.magnitude, seed=self.seed)
         
-        fx_no +=1
+        fx_no = 3
         self.gravity_force = (
             self.particles[0].mass*(self.gravity)
             ).to(ureg.pg*ureg.um/ureg.us**2)
         
+        fix_no = 4
         self.gravity_def = st.Template("""
 fix     $fx_no Atoms addforce 0 0 $mg
 """).substitute(fx_no = fx_no, mg = -self.gravity_force.magnitude) # pg*um/(us^2) (I hope)
         
-        fx_no +=1
+        fx_no = 5
         if self.enforce2d:
             self.enforce2d = "\nfix 	%u all enforce2d_bd\n"%fx_no
         else:
             self.enforce2d = ""
 
-        fx_no +=1
+        fx_no = 6
         self.wall_def = self.create_wall_string(fx_no)
         
     def reset_seed(self, seed = None):
