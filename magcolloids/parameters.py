@@ -199,7 +199,7 @@ class bistable_trap():
         if self.velocity is not None:
             self.velocity_fix = "fix		7 Traps move variable NULL NULL NULL v_vx v_vy v_vz"
         else:
-            self.velocity_fix = "fix		7 Traps move variable NULL NULL NULL v_vx v_vy v_vz"
+            self.velocity_fix = ""
             self.velocity = ""
             
         
