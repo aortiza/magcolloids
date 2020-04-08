@@ -63,7 +63,10 @@ class sim():
         self.particles.create_string()
         if not self.traps is None:
             self.traps.create_string()
-            
+        
+        if not self.world.ext_force is None:
+            self.world.ext_force.create_string()
+                
         self.world.create_string()
         self.field.create_string()
         
@@ -97,10 +100,21 @@ run 	$runtm
                         
         f.write(self.world.group_def)
         
-        f.write("\n### ---Fixes--- ###\n")    
+        f.write("\n### ---Variables--- ###\n") 
+           
+        f.write("\n## magnetic field\n") 
         f.write(self.field.variable_def)
+        
         if not self.traps is None:
+            f.write("\n## traps velocities\n") 
             f.write(self.traps.velocity)
+        
+        if not self.world.ext_force is None:
+            f.write("\n## external force\n") 
+            
+            f.write(self.world.ext_force.calculation)
+            
+        f.write("\n### ---Fixes--- ###\n") 
         
         f.write(self.field.fix_def)
         f.write(self.world.integrator_def)
@@ -110,6 +124,9 @@ run 	$runtm
         if not self.traps is None:
             f.write(self.traps.velocity_fix)
         
+        if not self.world.ext_force is None:
+            f.write(self.world.ext_force.fix_str)
+            
         f.write(self.run_def)
         f.close
 

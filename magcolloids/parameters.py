@@ -202,7 +202,18 @@ class bistable_trap():
             self.velocity_fix = ""
             self.velocity = ""
             
+class ext_force(): 
+    
+    def __init__(self, calculation, variable = "v_F"):
         
+        self.calculation = calculation
+        self.variable = variable
+                
+    def create_string(self):
+        
+        variables = "%sx %sy %sz"%tuple(3*[self.variable])
+        self.fix_str = "fix		8 Atoms addforce "+variables
+    
 
 class world():
     def __init__(self, particles,
@@ -212,7 +223,7 @@ class world():
                 dipole_cutoff = 200*ureg.um, lj_cutoff = 1, 
                 lj_parameters = [1e-2*ureg.pg*ureg.um**2/ureg.us**2, 2**(-1/6)],
                 gravity = 9.8*ureg.m/ureg.s**2,
-                enforce2d = False):
+                enforce2d = False, ext_force = None):
                 
         """ Real world parameters like the temperature. Also the confining walls
         Sets world parameters, like temperture, region, dipole cutoff and such.
@@ -259,6 +270,7 @@ class world():
         if len(self.region)==3:
             self.region = [p*s/2 for s in self.region for p in [-1,1]]
         
+        self.ext_force = ext_force
     
     def create_wall_string(self,fx_no):
     
