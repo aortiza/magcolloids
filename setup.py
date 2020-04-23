@@ -12,7 +12,7 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/aortiza/magcolloid",
     packages=setuptools.find_packages(),
-    install_requires = ['numpy','scipy','pandas','matplotlib','pint','jsonpickle'],
+    install_requires = ['numpy','scipy','pandas','matplotlib','pint'],
     include_package_data=True,
     classifiers=(
         "Programming Language :: Python :: 3",

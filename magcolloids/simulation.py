@@ -6,7 +6,6 @@ import os
 import sys
 import pandas as pd
 import copy as cp
-import jsonpickle
 from . import ureg
 
 
@@ -89,76 +88,73 @@ run 	$runtm
                              
         
         ### Write script
-        f = open(self.script_name,'w')
-        f.write("### ---preamble--- ###\n")
-        f.write("log %s"%self.log_name)
-        f.write(self.world.world_def)
+        with open(self.script_name,'w') as f:
+            f.write("### ---preamble--- ###\n")
+            f.write("log %s"%self.log_name)
+            f.write(self.world.world_def)
         
-        f.write("\n### ---Create Particles and Region--- ###\n")
+            f.write("\n### ---Create Particles and Region--- ###\n")
         
-        f.write("read_data "+self.input_name)
+            f.write("read_data "+self.input_name)
                         
-        f.write(self.world.group_def)
+            f.write(self.world.group_def)
         
-        f.write("\n### ---Variables--- ###\n") 
+            f.write("\n### ---Variables--- ###\n") 
            
-        f.write("\n## magnetic field\n") 
-        f.write(self.field.variable_def)
+            f.write("\n## magnetic field\n") 
+            f.write(self.field.variable_def)
         
-        if not self.traps is None:
-            f.write("\n## traps velocities\n") 
-            f.write(self.traps.velocity)
+            if not self.traps is None:
+                f.write("\n## traps velocities\n") 
+                f.write(self.traps.velocity)
         
-        if not self.world.ext_force is None:
-            f.write("\n## external force\n") 
+            if not self.world.ext_force is None:
+                f.write("\n## external force\n") 
             
-            f.write(self.world.ext_force.calculation)
+                f.write(self.world.ext_force.calculation)
             
-        f.write("\n### ---Fixes--- ###\n") 
+            f.write("\n### ---Fixes--- ###\n") 
         
-        f.write(self.field.fix_def)
-        f.write(self.world.integrator_def)
-        f.write(self.world.gravity_def)
-        f.write(self.world.wall_def)
-        f.write(self.world.enforce2d)
-        if not self.traps is None:
-            f.write(self.traps.velocity_fix)
+            f.write(self.field.fix_def)
+            f.write(self.world.integrator_def)
+            f.write(self.world.gravity_def)
+            f.write(self.world.wall_def)
+            f.write(self.world.enforce2d)
+            if not self.traps is None:
+                f.write(self.traps.velocity_fix)
         
-        if not self.world.ext_force is None:
-            f.write(self.world.ext_force.fix_str)
+            if not self.world.ext_force is None:
+                f.write(self.world.ext_force.fix_str)
             
-        f.write(self.run_def)
-        f.close
+            f.write(self.run_def)
+
 
         ### Write input file
-        f = open(self.input_name,'w')
-        f.write("This is the initial atom setup of %s"%self.input_name)
-        f.write(self.world.region_def)
+        with open(self.input_name,'w') as f:
+            f.write("This is the initial atom setup of %s"%self.input_name)
+            f.write(self.world.region_def)
         
-        f.write("\nAtoms\n\n")
+            f.write("\nAtoms\n\n")
         
-        f.write(self.particles.atom_def)
-        if not self.traps is None:
-            f.write(self.traps.atom_def)
+            f.write(self.particles.atom_def)
+            if not self.traps is None:
+                f.write(self.traps.atom_def)
         
         
-        if not self.traps is None:
-            if self.traps.cutoff == np.Inf*ureg.um:
-                f.write("\nBonds\n\n")
-                f.write(self.traps.bond_def)
+            if not self.traps is None:
+                if self.traps.cutoff == np.Inf*ureg.um:
+                    f.write("\nBonds\n\n")
+                    f.write(self.traps.bond_def)
         
-        if not self.traps is None:
-            if self.traps.cutoff == np.Inf*ureg.um:
-                f.write("\nBond Coeffs\n\n")
-                f.write(self.traps.bond_params)
+            if not self.traps is None:
+                if self.traps.cutoff == np.Inf*ureg.um:
+                    f.write("\nBond Coeffs\n\n")
+                    f.write(self.traps.bond_params)
             
-        f.write("\nPairIJ Coeffs\n\n")
-        f.write(self.world.interaction_def)
+            f.write("\nPairIJ Coeffs\n\n")
+            f.write(self.world.interaction_def)
         
-        f.write("\n\n")
-        pk = open(self.pickle_name,'w')
-        pk.write(jsonpickle.encode(self))
-        pk.close
+            f.write("\n\n")
                     
     def run(self,verbose = False):
         """This function runs an input script named filename in lammps. The input should be located in target_dir"""
