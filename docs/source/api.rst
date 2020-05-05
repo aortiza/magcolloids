@@ -17,5 +17,5 @@ Parameter Classes
 	
 Simulation Class
 ------------------
-.. autoclass:: magcolloidss.sim
+.. autoclass:: magcolloids.sim
 	:members: generate_scripts, run, load

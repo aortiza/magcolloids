@@ -14,7 +14,7 @@ class sim():
         file_name = "test", dir_name = "",stamp_time = False,
         particles = None, traps = None, world = None, field = None,
         timestep = 1e-3*ureg.s, framerate = 30*ureg.Hz, total_time = 60*ureg.s,
-        output = ["x", "y", "z"]):
+        output = ["x", "y", "z"], processors = 1):
         """ 
         A sim object contains the parameters defined before. It also requires some extra parameters that define the files in which the simulation scripts and results are stored """
         
@@ -33,6 +33,7 @@ class sim():
         self.total_time = total_time
         
         self.output = output
+        self.processors = processors
 
     def generate_scripts(self):
         """
@@ -161,17 +162,32 @@ run 	$runtm
         exec_paths = os.path.abspath(os.path.join(os.path.dirname(__file__), 'lammps_executables'))
         
         if sys.platform=='darwin':
-            lmp_exec = os.path.join(exec_paths,"lmp_mac")
+            if self.processors>1:
+                lmp_exec = "mpirun -np %u "%self.processors + os.path.join(exec_paths,"lmp_mac_mpi")
+            else: 
+                lmp_exec = os.path.join(exec_paths,"lmp_mac")
+            
         elif sys.platform=='linux':
-            lmp_exec = os.path.join(exec_paths,"lmp_serial")
+            if self.processors>1:
+                lmp_exec = "mpirun -np %u "%self.processors + os.path.join(exec_paths,"lmp_mpi")
+            else: 
+                lmp_exec = os.path.join(exec_paths,"lmp_serial")
         else:
-            lmp_exec = os.path.join(exec_paths,"lmp_mingw64-native.exe")
+            if self.processors>1:
+                lmp_exec = "mpirun -np %u "%self.processors + os.path.join(exec_paths,"lmp_mingw64-native-mpi")
+            else:
+                lmp_exec = os.path.join(exec_paths,"lmp_mingw64-native.exe")
+            
         
         if verbose:
             print(lmp_exec + " -in "+self.script_name)
             
         self.lmp_exec = lmp_exec
-        os.system(lmp_exec + " -in "+self.script_name)
+        if self.processors>1:
+            os.system(lmp_exec + " -in "+self.script_name)
+            
+        else:
+            os.system(lmp_exec + " -in "+self.script_name)
     
     def load(self,read_trj = False,sl = slice(0,-1,1)):
         """This method creates a lazy read object. The option read_trj = True reads the whole trj file and returns the output"""
