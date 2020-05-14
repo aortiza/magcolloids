@@ -1,0 +1,196 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>API &#8212; magcolloids v0.2.0 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Creating Circle Traps using external forces." href="CircleTrapsScript.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="api">
+<h1>API<a class="headerlink" href="#api" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="module-magcolloids">
+<span id="support-functions"></span><h2>Support Functions<a class="headerlink" href="#module-magcolloids" title="Permalink to this headline">¶</a></h2>
+<dl class="py function">
+<dt id="magcolloids.initial_setup">
+<code class="sig-prename descclassname">magcolloids.</code><code class="sig-name descname">initial_setup</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">n_of_particles</span></em>, <em class="sig-param"><span class="n">packing</span><span class="o">=</span><span class="default_value">0.3</span></em>, <em class="sig-param"><span class="n">height</span><span class="o">=</span><span class="default_value">4</span></em>, <em class="sig-param"><span class="n">radius</span><span class="o">=</span><span class="default_value">1.4</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/magcolloids/support.html#initial_setup"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#magcolloids.initial_setup" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function returns an array of initial positions for confined particles, and
+a region where these particles are enclosed with a packing fraction “packing”
+The particles are initially set in a square array, as far from each other as possible.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="magcolloids.animate_trj">
+<code class="sig-prename descclassname">magcolloids.</code><code class="sig-name descname">animate_trj</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">trj</span></em>, <em class="sig-param"><span class="n">sim</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">region</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">radius</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">framerate</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">ax</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">verb</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">start</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">end</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">step</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">speedup</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">preserve_limits</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/magcolloids/support.html#animate_trj"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#magcolloids.animate_trj" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function animates the trajectory resulting from a confined dimer simulation. It displays the z direction as a colormap and the particles in the x and y direction. The simulation is required as argument to obtain parameters like the region size and the particles radius.
+Optional parameters are:
+* ax: an axis object to use for creating the plot.
+* start: start time of the simulation if not the whole time is required. The default is 0. 
+* end: end time of the simulation. The default is the total simulation time.
+* step = 1. The framerate, so to speak. 
+* verb = False. If verb = True, the routine prints indicators that is running. 
+* speedup allows us to do faster videos. Default is 1, which means normal ratio.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="parameter-classes">
+<h2>Parameter Classes<a class="headerlink" href="#parameter-classes" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="magcolloids.particles">
+<em class="property">class </em><code class="sig-prename descclassname">magcolloids.</code><code class="sig-name descname">particles</code><span class="sig-paren">(</span><em class="sig-param">positions</em>, <em class="sig-param">atoms_id=None</em>, <em class="sig-param">atom_type=0</em>, <em class="sig-param">radius=&lt;Quantity(2</em>, <em class="sig-param">'micrometer')&gt;</em>, <em class="sig-param">susceptibility=1</em>, <em class="sig-param">drag=&lt;Quantity(4000000.0</em>, <em class="sig-param">'piconewton * second / micrometer')&gt;</em>, <em class="sig-param">diffusion=None</em>, <em class="sig-param">temperature=None</em>, <em class="sig-param">density=&lt;Quantity(1000.0</em>, <em class="sig-param">'kilogram / meter ** 3')&gt;</em>, <em class="sig-param">susceptibility_spread=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/magcolloids/parameters.html#particles"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#magcolloids.particles" title="Permalink to this definition">¶</a></dt>
+<dd><p>A type of particle to be simulated</p>
+</dd></dl>
+
+<dl class="py class">
+<dt id="magcolloids.field">
+<em class="property">class </em><code class="sig-prename descclassname">magcolloids.</code><code class="sig-name descname">field</code><span class="sig-paren">(</span><em class="sig-param">magnitude=&lt;Quantity(10</em>, <em class="sig-param">'millitesla')&gt;</em>, <em class="sig-param">frequency=&lt;Quantity(0</em>, <em class="sig-param">'hertz')&gt;</em>, <em class="sig-param">angle=&lt;Quantity(0</em>, <em class="sig-param">'degree')&gt;</em>, <em class="sig-param">fieldx=None</em>, <em class="sig-param">fieldy=None</em>, <em class="sig-param">fieldz=None</em>, <em class="sig-param">multibody_iter=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/magcolloids/parameters.html#field"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#magcolloids.field" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py class">
+<dt id="magcolloids.world">
+<em class="property">class </em><code class="sig-prename descclassname">magcolloids.</code><code class="sig-name descname">world</code><span class="sig-paren">(</span><em class="sig-param">particles, traps=None, temperature=&lt;Quantity(300, 'kelvin')&gt;, region=&lt;Quantity([200 200  20], 'micrometer')&gt;, boundaries=['s', 's', 'p'], walls=[False, False, True], dipole_cutoff=&lt;Quantity(200, 'micrometer')&gt;, lj_cutoff=1, lj_parameters=[&lt;Quantity(0.01, 'micrometer ** 2 * picogram / microsecond ** 2')&gt;, 0.8908987181403393], gravity=&lt;Quantity(9.8, 'meter / second ** 2')&gt;, enforce2d=False, ext_force=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/magcolloids/parameters.html#world"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#magcolloids.world" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="py method">
+<dt id="magcolloids.world.reset_seed">
+<code class="sig-name descname">reset_seed</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seed</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/magcolloids/parameters.html#world.reset_seed"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#magcolloids.world.reset_seed" title="Permalink to this definition">¶</a></dt>
+<dd><p>Resets the seed of the world object for it to be used again. If the seed parameter is used, the seed is set to that. If not, it is a random number between 1 and 1000000</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="simulation-class">
+<h2>Simulation Class<a class="headerlink" href="#simulation-class" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="magcolloids.sim">
+<em class="property">class </em><code class="sig-prename descclassname">magcolloids.</code><code class="sig-name descname">sim</code><span class="sig-paren">(</span><em class="sig-param">file_name='test', dir_name='', stamp_time=False, particles=None, traps=None, world=None, field=None, timestep=&lt;Quantity(0.001, 'second')&gt;, framerate=&lt;Quantity(30, 'hertz')&gt;, total_time=&lt;Quantity(60, 'second')&gt;, output=['x', 'y', 'z'], processors=1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/magcolloids/simulation.html#sim"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#magcolloids.sim" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="py method">
+<dt id="magcolloids.sim.generate_scripts">
+<code class="sig-name descname">generate_scripts</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/magcolloids/simulation.html#sim.generate_scripts"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#magcolloids.sim.generate_scripts" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method generates the input script for the lammps simulation. 
+It accepts some options, which for now include:
+* (future) input_file: boolean, (False) which specifies if the input file is stored separatelly from the main script.</p>
+<blockquote>
+<div><p>This icreases readibility for large amounts of particles</p>
+</div></blockquote>
+</dd></dl>
+
+<dl class="py method">
+<dt id="magcolloids.sim.load">
+<code class="sig-name descname">load</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">read_trj</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">sl</span><span class="o">=</span><span class="default_value">slice(0, - 1, 1)</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/magcolloids/simulation.html#sim.load"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#magcolloids.sim.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method creates a lazy read object. The option read_trj = True reads the whole trj file and returns the output</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="magcolloids.sim.run">
+<code class="sig-name descname">run</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">verbose</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/magcolloids/simulation.html#sim.run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#magcolloids.sim.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function runs an input script named filename in lammps. The input should be located in target_dir</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">magcolloids</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html#walkthrough">Walkthrough</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">API</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#module-magcolloids">Support Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#parameter-classes">Parameter Classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#simulation-class">Simulation Class</a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="CircleTrapsScript.html" title="previous chapter">Creating Circle Traps using external forces.</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, Antonio Ortiz-Ambriz.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.0.3</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/api.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

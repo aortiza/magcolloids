@@ -1,0 +1,638 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>magcolloids.parameters &#8212; magcolloids v0.2.0 documentation</title>
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for magcolloids.parameters</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">string</span> <span class="k">as</span> <span class="nn">st</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">copy</span> <span class="k">as</span> <span class="nn">cp</span>
+<span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">ureg</span>
+
+<span class="sd">&quot;&quot;&quot; Here we should change the abstraction: instead of a collection of particles with parameters, perhaps it would be more adequate to define a collection of particles with a single set of parameters. The program could then create a script from several collections of particles, which would allow different parameters. This is more in line with the way of lammps, and therefore probably simpler &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="particles"><a class="viewcode-back" href="../../api.html#magcolloids.particles">[docs]</a><span class="k">class</span> <span class="nc">particles</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot; A type of particle to be simulated &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">positions</span><span class="p">,</span>
+                <span class="n">atoms_id</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="n">atom_type</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+                <span class="n">radius</span> <span class="o">=</span> <span class="mi">2</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">um</span><span class="p">,</span>
+                <span class="n">susceptibility</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+                <span class="n">drag</span> <span class="o">=</span> <span class="mf">4e6</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">pN</span><span class="o">/</span><span class="p">(</span><span class="n">ureg</span><span class="o">.</span><span class="n">um</span><span class="o">/</span><span class="n">ureg</span><span class="o">.</span><span class="n">s</span><span class="p">),</span> 
+                <span class="n">diffusion</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">temperature</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> 
+                <span class="n">density</span> <span class="o">=</span> <span class="mi">1000</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">kg</span><span class="o">/</span><span class="n">ureg</span><span class="o">.</span><span class="n">m</span><span class="o">**</span><span class="mi">3</span><span class="p">,</span>
+                <span class="n">susceptibility_spread</span> <span class="o">=</span> <span class="mi">0</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initializes a particle type. </span>
+<span class="sd">        The diffusion coefficient can be given instead o the drag.</span>
+<span class="sd">        In that case, the temperature is also needed to calculate the drag. </span>
+<span class="sd">        This represents the density mismatch of the particle in the solvent.</span>
+<span class="sd">        The `atoms_id` is a list of integers that uniquelly identifies each particle. It must be the same size as the `positions array`.</span>
+<span class="sd">        The `atom_type` is an integer that uniquely identifies this group of particles. </span>
+<span class="sd">        Both arguments are necessary when more than one type of particles is initialized.</span>
+<span class="sd">        &quot;&quot;&quot;</span>        
+        <span class="k">if</span> <span class="n">diffusion</span><span class="p">:</span>
+            
+            <span class="n">kB</span> <span class="o">=</span> <span class="p">(</span><span class="mf">1.38064852e-23</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">J</span><span class="o">/</span><span class="n">ureg</span><span class="o">.</span><span class="n">K</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">ureg</span><span class="o">.</span><span class="n">pN</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">nm</span><span class="o">/</span><span class="n">ureg</span><span class="o">.</span><span class="n">K</span><span class="p">)</span>
+            
+            <span class="n">KbT</span> <span class="o">=</span> <span class="n">kB</span><span class="o">*</span><span class="n">temperature</span>
+            <span class="n">drag</span> <span class="o">=</span> <span class="n">KbT</span><span class="o">/</span><span class="n">diffusion</span>
+            
+        <span class="bp">self</span><span class="o">.</span><span class="n">positions</span> <span class="o">=</span> <span class="n">positions</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">ureg</span><span class="o">.</span><span class="n">um</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">radius</span> <span class="o">=</span> <span class="n">radius</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">ureg</span><span class="o">.</span><span class="n">um</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">susceptibility</span> <span class="o">=</span> <span class="n">susceptibility</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">drag</span> <span class="o">=</span> <span class="n">drag</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">ureg</span><span class="o">.</span><span class="n">pg</span><span class="o">/</span><span class="n">ureg</span><span class="o">.</span><span class="n">us</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mass</span> <span class="o">=</span> <span class="p">(</span><span class="n">density</span><span class="o">*</span><span class="mi">4</span><span class="o">/</span><span class="mi">3</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="p">(</span><span class="n">radius</span><span class="p">)</span><span class="o">**</span><span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">ureg</span><span class="o">.</span><span class="n">pg</span><span class="p">)</span>
+        
+        <span class="n">damp</span> <span class="o">=</span> <span class="mf">1e-3</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">us</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">drag_mass</span> <span class="o">=</span> <span class="p">(</span><span class="n">drag</span><span class="o">*</span><span class="n">damp</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">ureg</span><span class="o">.</span><span class="n">pg</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="n">atoms_id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">atoms_id</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">positions</span><span class="p">))</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">atoms_id</span> <span class="o">=</span> <span class="n">atoms_id</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">atom_type</span> <span class="o">=</span> <span class="n">atom_type</span>
+        
+    <span class="k">def</span> <span class="nf">create_string</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; creates the strings that then are introduced into the lammps scripts&quot;&quot;&quot;</span>
+        
+        <span class="n">density</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mass</span><span class="o">/</span><span class="p">(</span><span class="mi">4</span><span class="o">/</span><span class="mi">3</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">radius</span><span class="o">**</span><span class="mi">3</span><span class="p">)</span>
+        <span class="n">atom_string</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;atom id|type|x0|y0|z0|d|rho|m|mx|my|mz|chi|trap_id&quot;</span><span class="p">)</span>
+        
+        <span class="c1">### This is the string pattern for a single atom. The colloid positions are left as a template, as well as the atom id. </span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">atom_def</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">Template</span><span class="p">(</span>
+            <span class="sd">&quot;&quot;&quot;$atom_ix\t $atom_type\t $center\t $diameter\t $density\t $moment\t $direction\t $susceptibility\t $trap_ix #$string&quot;&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">substitute</span><span class="p">(</span>
+                <span class="n">atom_ix</span> <span class="o">=</span> <span class="s2">&quot;$atom_ix&quot;</span><span class="p">,</span>
+                <span class="n">atom_type</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">atom_type</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span>
+                <span class="n">center</span> <span class="o">=</span> <span class="s2">&quot;$x0</span><span class="se">\t</span><span class="s2"> $y0</span><span class="se">\t</span><span class="s2"> $z0&quot;</span><span class="p">,</span>
+                <span class="n">diameter</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">radius</span><span class="o">*</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">magnitude</span><span class="p">,</span>
+                <span class="n">density</span> <span class="o">=</span> <span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">drag_mass</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="mi">4</span><span class="o">/</span><span class="mi">3</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">radius</span><span class="o">**</span><span class="mi">3</span><span class="p">))</span><span class="o">.</span><span class="n">magnitude</span><span class="p">,</span>
+                <span class="n">moment</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
+                <span class="n">direction</span> <span class="o">=</span> <span class="s2">&quot;0</span><span class="se">\t</span><span class="s2"> 0</span><span class="se">\t</span><span class="s2"> 0&quot;</span><span class="p">,</span>
+                <span class="n">susceptibility</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">susceptibility</span><span class="p">,</span>
+                <span class="n">trap_ix</span> <span class="o">=</span> <span class="s2">&quot;$atom_trap&quot;</span><span class="p">,</span>
+                <span class="n">string</span> <span class="o">=</span> <span class="n">atom_string</span>
+        <span class="p">)</span>
+        
+        <span class="c1"># Now we use the string pattern defined before, and define an instance for each trap.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">atom_def</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+            <span class="p">[</span><span class="n">st</span><span class="o">.</span><span class="n">Template</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">atom_def</span><span class="p">)</span><span class="o">.</span><span class="n">substitute</span><span class="p">(</span>
+                <span class="n">atom_ix</span> <span class="o">=</span> <span class="n">ix</span><span class="p">,</span>
+                <span class="n">x0</span> <span class="o">=</span> <span class="n">c</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">y0</span> <span class="o">=</span> <span class="n">c</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">z0</span> <span class="o">=</span> <span class="n">c</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span>
+                <span class="n">atom_trap</span> <span class="o">=</span> <span class="n">ix</span><span class="p">)</span>
+                    <span class="k">for</span> <span class="n">ix</span><span class="p">,</span><span class="n">c</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">atoms_id</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">positions</span><span class="o">.</span><span class="n">magnitude</span><span class="p">)</span>
+            <span class="p">]</span>
+        <span class="p">)</span><span class="o">+</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span></div>
+                
+<span class="k">class</span> <span class="nc">bistable_trap</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot; A bistable potential &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> 
+                <span class="n">positions</span><span class="p">,</span>
+                <span class="n">directions</span><span class="p">,</span>
+                <span class="n">particles</span><span class="p">,</span>
+                <span class="n">trap_id</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="n">atom_type</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+                <span class="n">bonds_id</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="n">distance</span> <span class="o">=</span> <span class="mi">10</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">um</span><span class="p">,</span>
+                <span class="n">height</span> <span class="o">=</span> <span class="mi">4</span> <span class="o">*</span> <span class="n">ureg</span><span class="o">.</span><span class="n">pN</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">nm</span><span class="p">,</span>
+                <span class="n">stiffness</span> <span class="o">=</span> <span class="mf">1.2e-4</span> <span class="o">*</span> <span class="n">ureg</span><span class="o">.</span><span class="n">pN</span><span class="o">/</span><span class="n">ureg</span><span class="o">.</span><span class="n">nm</span><span class="p">,</span>
+                <span class="n">height_spread</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+                <span class="n">cutoff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">Inf</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">um</span><span class="p">,</span>
+                <span class="n">velocity</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initializes a group of bistable traps with the same parameters.</span>
+<span class="sd">        The required arguments are: </span>
+<span class="sd">            * positions</span>
+<span class="sd">            * directions</span>
+<span class="sd">            * particles</span>
+<span class="sd">        trap_id is an integer that uniquelly identifies each atom. This means that a trap can&#39;t have a trap_id if an atom has it. </span>
+<span class="sd">        atom_type is the an integer that identifies the trap type. Again, the uniqueness holds also to atoms.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">positions</span> <span class="o">=</span> <span class="n">positions</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">ureg</span><span class="o">.</span><span class="n">um</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">directions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">directions</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">distance</span> <span class="o">=</span> <span class="n">distance</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">ureg</span><span class="o">.</span><span class="n">um</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">height</span> <span class="o">=</span> <span class="n">height</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">ureg</span><span class="o">.</span><span class="n">pg</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">um</span><span class="o">**</span><span class="mi">2</span><span class="o">/</span><span class="n">ureg</span><span class="o">.</span><span class="n">us</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stiffness</span> <span class="o">=</span> <span class="n">stiffness</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">ureg</span><span class="o">.</span><span class="n">pg</span><span class="o">/</span><span class="n">ureg</span><span class="o">.</span><span class="n">us</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">height_spread</span> <span class="o">=</span> <span class="n">height_spread</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">bonds</span> <span class="o">=</span> <span class="n">particles</span>
+        <span class="k">if</span> <span class="n">trap_id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">trap_id</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span>
+                <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">positions</span><span class="p">),</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">positions</span><span class="p">)</span><span class="o">+</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">positions</span><span class="p">))</span>
+                
+        <span class="bp">self</span><span class="o">.</span><span class="n">atoms_id</span> <span class="o">=</span> <span class="n">trap_id</span>
+        
+        <span class="k">if</span> <span class="n">bonds_id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">bonds_id</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">positions</span><span class="p">))</span>
+            
+        <span class="bp">self</span><span class="o">.</span><span class="n">bonds_id</span> <span class="o">=</span> <span class="n">bonds_id</span>
+          
+        <span class="bp">self</span><span class="o">.</span><span class="n">atom_type</span> <span class="o">=</span> <span class="n">atom_type</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cutoff</span> <span class="o">=</span> <span class="n">cutoff</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">velocity</span> <span class="o">=</span> <span class="n">velocity</span>
+        
+    <span class="k">def</span> <span class="nf">create_string</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        
+        <span class="c1"># We first define the string pattern that defines a single trap</span>
+        <span class="n">atom_string</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;trap id|type|x0|y0|z0|1|1|0|dx|dy|dz|0|atom_id&quot;</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">atom_def</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">Template</span><span class="p">(</span>
+            <span class="sd">&quot;&quot;&quot;$atom_ix\t $atom_type\t $center\t $diameter\t $density\t $moment\t $direction\t $susceptibility\t $trap_ix #$string &quot;&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">substitute</span><span class="p">(</span>
+                <span class="n">atom_ix</span> <span class="o">=</span> <span class="s2">&quot;$atom_ix&quot;</span><span class="p">,</span>
+                <span class="n">atom_type</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">atom_type</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span>
+                <span class="n">center</span> <span class="o">=</span> <span class="s2">&quot;$x0</span><span class="se">\t</span><span class="s2"> $y0</span><span class="se">\t</span><span class="s2"> $z0&quot;</span><span class="p">,</span>
+                <span class="n">diameter</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+                <span class="n">density</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+                <span class="n">moment</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+                <span class="n">direction</span> <span class="o">=</span> <span class="s2">&quot;$dx0</span><span class="se">\t</span><span class="s2"> $dy0</span><span class="se">\t</span><span class="s2"> $dz0&quot;</span><span class="p">,</span>
+                <span class="n">susceptibility</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+                <span class="n">trap_ix</span> <span class="o">=</span> <span class="s2">&quot;$ix&quot;</span><span class="p">,</span>
+                <span class="n">string</span> <span class="o">=</span> <span class="n">atom_string</span>
+        <span class="p">)</span>
+        
+        <span class="c1"># Now we use the string pattern defined before, and define an instance for each trap.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">atom_def</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+            <span class="p">[</span><span class="n">st</span><span class="o">.</span><span class="n">Template</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">atom_def</span><span class="p">)</span><span class="o">.</span><span class="n">substitute</span><span class="p">(</span>
+                <span class="n">atom_ix</span> <span class="o">=</span> <span class="n">ix</span><span class="p">,</span>
+                <span class="n">x0</span> <span class="o">=</span> <span class="n">c</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">y0</span> <span class="o">=</span> <span class="n">c</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">z0</span> <span class="o">=</span> <span class="n">c</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span>
+                <span class="n">dx0</span> <span class="o">=</span> <span class="n">d</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">dy0</span> <span class="o">=</span> <span class="n">d</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">dz0</span> <span class="o">=</span> <span class="n">d</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="n">ix</span><span class="o">=</span><span class="n">a_ix</span><span class="p">)</span>
+                    <span class="k">for</span> <span class="n">ix</span><span class="p">,</span><span class="n">c</span><span class="p">,</span><span class="n">d</span><span class="p">,</span><span class="n">a_ix</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">atoms_id</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">positions</span><span class="o">.</span><span class="n">magnitude</span><span class="p">,</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">directions</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">distance</span><span class="o">.</span><span class="n">magnitude</span><span class="p">,</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">bonds</span><span class="o">.</span><span class="n">atoms_id</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+            <span class="p">]</span>
+        <span class="p">)</span><span class="o">+</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cutoff</span> <span class="o">==</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">um</span><span class="p">:</span>
+            <span class="c1"># The bonds are defined as a conection from a trap, to an atom. the bond type is equal to the bond id (bond_ix) because every bond is unique. Only that way can disorder be introduced</span>
+            
+            <span class="bp">self</span><span class="o">.</span><span class="n">bond_def</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">st</span><span class="o">.</span><span class="n">Template</span><span class="p">(</span>
+                <span class="sd">&quot;&quot;&quot;$bond_ix $bond_type $trap_ix $atom_ix&quot;&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">substitute</span><span class="p">(</span>
+                    <span class="n">bond_ix</span> <span class="o">=</span> <span class="n">b</span><span class="p">,</span>
+                    <span class="n">bond_type</span> <span class="o">=</span> <span class="n">b</span><span class="p">,</span>
+                    <span class="n">trap_ix</span> <span class="o">=</span> <span class="n">i</span><span class="p">,</span>
+                    <span class="n">atom_ix</span> <span class="o">=</span> <span class="n">j</span><span class="p">)</span> <span class="k">for</span> <span class="n">b</span><span class="p">,</span><span class="n">i</span><span class="p">,</span><span class="n">j</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bonds_id</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">atoms_id</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">bonds</span><span class="o">.</span><span class="n">atoms_id</span><span class="o">+</span><span class="mi">1</span><span class="p">)]</span>
+            <span class="p">)</span><span class="o">+</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+            
+            <span class="c1"># The bond params are defined by bond type. These determine the stiffness and height of the traps</span>
+            <span class="n">height_disorder</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">height</span> <span class="o">*</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">atoms_id</span><span class="p">))</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">height_spread</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">height_disorder</span> <span class="o">=</span> <span class="n">height_disorder</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">ureg</span><span class="o">.</span><span class="n">pg</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">um</span><span class="o">**</span><span class="mi">2</span><span class="o">/</span><span class="n">ureg</span><span class="o">.</span><span class="n">us</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">magnitude</span>
+        
+            <span class="bp">self</span><span class="o">.</span><span class="n">bond_params</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">st</span><span class="o">.</span><span class="n">Template</span><span class="p">(</span>
+                <span class="sd">&quot;&quot;&quot;$bond_type  $stiffness $height_energy&quot;&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">substitute</span><span class="p">(</span>
+                        <span class="n">bond_type</span> <span class="o">=</span> <span class="n">i</span><span class="p">,</span> <span class="n">stiffness</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stiffness</span><span class="o">.</span><span class="n">magnitude</span><span class="p">,</span> <span class="n">height_energy</span> <span class="o">=</span> <span class="n">h</span>
+                    <span class="p">)</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">h</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bonds_id</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="n">height_disorder</span><span class="p">)])</span><span class="o">+</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="c1"># If there is no cuttoff, the trap doesn&#39;t have a pair interaction. </span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pair_def</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">st</span><span class="o">.</span><span class="n">Template</span><span class="p">(</span>
+                <span class="sd">&quot;&quot;&quot;$atom_type $trap_type none&quot;&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">substitute</span><span class="p">(</span>
+                    <span class="n">atom_type</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bonds</span><span class="o">.</span><span class="n">atom_type</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span>
+                    <span class="n">trap_type</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">atom_type</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span>
+                    <span class="n">k_outer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stiffness</span><span class="o">.</span><span class="n">magnitude</span><span class="p">,</span>
+                    <span class="n">k_inner</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">height</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">ureg</span><span class="o">.</span><span class="n">pg</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">um</span><span class="o">**</span><span class="mi">2</span><span class="o">/</span><span class="n">ureg</span><span class="o">.</span><span class="n">us</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">magnitude</span><span class="p">,</span>
+                    <span class="n">cutoff</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cutoff</span><span class="p">)])</span>
+                    
+        <span class="k">else</span><span class="p">:</span> 
+            <span class="c1"># If there is a cuttoff, the trap is defined as a pair interaction between types. For the moment this means the disorder in the height is ignored. </span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pair_def</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">st</span><span class="o">.</span><span class="n">Template</span><span class="p">(</span>
+                <span class="sd">&quot;&quot;&quot;$atom_type $trap_type biharmonic $k_outer $k_inner $cutoff&quot;&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">substitute</span><span class="p">(</span>
+                    <span class="n">atom_type</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bonds</span><span class="o">.</span><span class="n">atom_type</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span>
+                    <span class="n">trap_type</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">atom_type</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span>
+                    <span class="n">k_outer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stiffness</span><span class="o">.</span><span class="n">magnitude</span><span class="p">,</span>
+                    <span class="n">k_inner</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">height</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">ureg</span><span class="o">.</span><span class="n">pg</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">um</span><span class="o">**</span><span class="mi">2</span><span class="o">/</span><span class="n">ureg</span><span class="o">.</span><span class="n">us</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">magnitude</span><span class="p">,</span>
+                    <span class="n">cutoff</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cutoff</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">ureg</span><span class="o">.</span><span class="n">um</span><span class="p">)</span><span class="o">.</span><span class="n">magnitude</span><span class="p">)])</span>          
+        
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">velocity</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">velocity_fix</span> <span class="o">=</span> <span class="s2">&quot;fix		7 Traps move variable NULL NULL NULL v_vx v_vy v_vz&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">velocity_fix</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">velocity</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+            
+<span class="k">class</span> <span class="nc">ext_force</span><span class="p">():</span> 
+    
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">calculation</span><span class="p">,</span> <span class="n">variable</span> <span class="o">=</span> <span class="s2">&quot;v_F&quot;</span><span class="p">):</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">calculation</span> <span class="o">=</span> <span class="n">calculation</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">variable</span> <span class="o">=</span> <span class="n">variable</span>
+                
+    <span class="k">def</span> <span class="nf">create_string</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        
+        <span class="n">variables</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">x </span><span class="si">%s</span><span class="s2">y </span><span class="si">%s</span><span class="s2">z&quot;</span><span class="o">%</span><span class="nb">tuple</span><span class="p">(</span><span class="mi">3</span><span class="o">*</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">variable</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fix_str</span> <span class="o">=</span> <span class="s2">&quot;fix		8 Atoms addforce &quot;</span><span class="o">+</span><span class="n">variables</span>
+    
+
+<div class="viewcode-block" id="world"><a class="viewcode-back" href="../../api.html#magcolloids.world">[docs]</a><span class="k">class</span> <span class="nc">world</span><span class="p">():</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">particles</span><span class="p">,</span>
+                <span class="n">traps</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="n">temperature</span> <span class="o">=</span> <span class="mi">300</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">K</span><span class="p">,</span> <span class="n">region</span> <span class="o">=</span> <span class="p">[</span><span class="mi">200</span><span class="p">,</span><span class="mi">200</span><span class="p">,</span><span class="mi">20</span><span class="p">]</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">um</span><span class="p">,</span>
+                <span class="n">boundaries</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;s&quot;</span><span class="p">,</span><span class="s2">&quot;s&quot;</span><span class="p">,</span><span class="s2">&quot;p&quot;</span><span class="p">],</span> <span class="n">walls</span><span class="o">=</span><span class="p">[</span><span class="kc">False</span><span class="p">,</span><span class="kc">False</span><span class="p">,</span><span class="kc">True</span><span class="p">],</span>
+                <span class="n">dipole_cutoff</span> <span class="o">=</span> <span class="mi">200</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">um</span><span class="p">,</span> <span class="n">lj_cutoff</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> 
+                <span class="n">lj_parameters</span> <span class="o">=</span> <span class="p">[</span><span class="mf">1e-2</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">pg</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">um</span><span class="o">**</span><span class="mi">2</span><span class="o">/</span><span class="n">ureg</span><span class="o">.</span><span class="n">us</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="o">/</span><span class="mi">6</span><span class="p">)],</span>
+                <span class="n">gravity</span> <span class="o">=</span> <span class="mf">9.8</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">m</span><span class="o">/</span><span class="n">ureg</span><span class="o">.</span><span class="n">s</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span>
+                <span class="n">enforce2d</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">ext_force</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+                
+        <span class="sd">&quot;&quot;&quot; Real world parameters like the temperature. Also the confining walls</span>
+<span class="sd">        Sets world parameters, like temperture, region, dipole cutoff and such.</span>
+<span class="sd">    </span>
+<span class="sd">        the lj and dipole parameters are in units of radius. </span>
+<span class="sd">        .. to do::</span>
+<span class="sd">                If the dipole_cutoff is not given, the program should calculate a default cutoff as the length when the field is reduced to a fraction of KbT. </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">particles</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;particles&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">particles</span><span class="o">=</span><span class="p">[</span><span class="n">particles</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">particles</span><span class="o">=</span><span class="n">particles</span>
+            
+        <span class="k">if</span> <span class="n">traps</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;bistable_trap&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">traps</span><span class="o">=</span><span class="p">[</span><span class="n">traps</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">traps</span><span class="o">=</span><span class="n">traps</span>
+        
+        <span class="n">traps</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">traps</span>
+        <span class="k">if</span> <span class="n">traps</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">cut_bh</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">else</span><span class="p">:</span>    
+            <span class="n">lengths</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">t</span><span class="o">.</span><span class="n">distance</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">ureg</span><span class="o">.</span><span class="n">um</span><span class="p">)</span><span class="o">.</span><span class="n">magnitude</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">traps</span><span class="p">])</span>
+            <span class="n">cutoffs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">t</span><span class="o">.</span><span class="n">cutoff</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">ureg</span><span class="o">.</span><span class="n">um</span><span class="p">)</span><span class="o">.</span><span class="n">magnitude</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">traps</span><span class="p">])</span>
+            <span class="n">cut_bh</span> <span class="o">=</span> <span class="n">lengths</span><span class="o">+</span><span class="n">cutoffs</span>
+            <span class="k">if</span> <span class="n">cut_bh</span><span class="p">[</span><span class="n">cut_bh</span><span class="o">!=</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">]</span><span class="o">.</span><span class="n">size</span><span class="o">==</span><span class="mi">0</span><span class="p">:</span>
+                <span class="c1"># no finite traps. cutoff is 0 because traps are defined through bonds, not pairs.</span>
+                <span class="n">cut_bh</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># some finite traps. Global cutoff is the maximum cutoff possible. </span>
+                <span class="n">cut_bh</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">cut_bh</span><span class="p">[</span><span class="n">cut_bh</span><span class="o">!=</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">])</span>
+                
+        <span class="bp">self</span><span class="o">.</span><span class="n">bh_cutoff</span> <span class="o">=</span> <span class="n">cut_bh</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">temperature</span> <span class="o">=</span> <span class="n">temperature</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">region</span> <span class="o">=</span> <span class="n">region</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">boundaries</span> <span class="o">=</span> <span class="n">boundaries</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">walls</span> <span class="o">=</span> <span class="n">walls</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dipole_cutoff</span> <span class="o">=</span> <span class="n">dipole_cutoff</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">ureg</span><span class="o">.</span><span class="n">um</span><span class="p">)</span> <span class="c1">#um</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lj_cutoff</span> <span class="o">=</span> <span class="n">lj_cutoff</span> <span class="c1"># sigma</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lj_parameters</span> <span class="o">=</span> <span class="n">lj_parameters</span> <span class="c1">#[pg um^2 us^-2,sigma]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gravity</span> <span class="o">=</span> <span class="n">gravity</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">ureg</span><span class="o">.</span><span class="n">um</span><span class="o">/</span><span class="n">ureg</span><span class="o">.</span><span class="n">us</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">enforce2d</span> <span class="o">=</span> <span class="n">enforce2d</span>
+                
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">region</span><span class="p">)</span><span class="o">==</span><span class="mi">3</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">region</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span><span class="o">*</span><span class="n">s</span><span class="o">/</span><span class="mi">2</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">region</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]]</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">ext_force</span> <span class="o">=</span> <span class="n">ext_force</span>
+    
+    <span class="k">def</span> <span class="nf">create_wall_string</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">fx_no</span><span class="p">):</span>
+    
+        <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">walls</span><span class="p">):</span>
+            <span class="n">walls</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">lo EDGE $lj_eps $lj_sgm  $lj_cut </span><span class="si">%s</span><span class="s2">hi EDGE $lj_eps $lj_sgm  $lj_cut &quot;</span><span class="o">%</span><span class="p">(</span><span class="n">r</span><span class="p">,</span><span class="n">r</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">w</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span> <span class="k">for</span> <span class="p">(</span><span class="n">r</span><span class="p">,</span><span class="n">w</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">([</span><span class="s2">&quot;x&quot;</span><span class="p">,</span><span class="s2">&quot;y&quot;</span><span class="p">,</span><span class="s2">&quot;z&quot;</span><span class="p">],</span><span class="bp">self</span><span class="o">.</span><span class="n">walls</span><span class="p">)]</span>
+            <span class="n">walls</span> <span class="o">=</span> <span class="s2">&quot;fix 	$fx_no Atoms wall/lj126 &quot;</span><span class="o">+</span><span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">walls</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot; </span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="k">else</span><span class="p">:</span> 
+            <span class="n">walls</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+            
+        <span class="k">return</span> <span class="n">st</span><span class="o">.</span><span class="n">Template</span><span class="p">(</span><span class="n">walls</span><span class="p">)</span><span class="o">.</span><span class="n">substitute</span><span class="p">(</span>
+                    <span class="n">fx_no</span><span class="o">=</span><span class="n">fx_no</span><span class="p">,</span>
+                    <span class="n">lj_eps</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">lj_parameters</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">magnitude</span><span class="p">,</span>
+                    <span class="n">lj_sgm</span><span class="o">=</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">particles</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">radius</span><span class="p">)</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">lj_parameters</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span><span class="o">.</span><span class="n">magnitude</span><span class="p">,</span>
+                    <span class="n">lj_cut</span><span class="o">=</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">particles</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">radius</span><span class="p">)</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">lj_cutoff</span><span class="p">)</span><span class="o">.</span><span class="n">magnitude</span><span class="p">,</span>
+                    <span class="p">)</span>
+
+    
+    <span class="k">def</span> <span class="nf">create_string</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">enforce2d</span><span class="p">:</span>
+            <span class="n">dimension</span> <span class="o">=</span> <span class="s2">&quot;dimension 2&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">dimension</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+            
+        <span class="n">particle_types</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">particles</span><span class="p">)</span>
+        <span class="n">total_particles</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">positions</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">particles</span><span class="p">])</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">traps</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">trap_types</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">traps</span><span class="p">)</span>
+            <span class="n">total_bond_traps</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">positions</span><span class="p">)</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">traps</span> <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">cutoff</span><span class="o">==</span><span class="n">np</span><span class="o">.</span><span class="n">Inf</span><span class="o">*</span><span class="n">t</span><span class="o">.</span><span class="n">cutoff</span><span class="o">.</span><span class="n">units</span><span class="p">])</span>
+            <span class="n">total_pair_traps</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">positions</span><span class="p">)</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">traps</span> <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">cutoff</span><span class="o">&lt;</span><span class="n">np</span><span class="o">.</span><span class="n">Inf</span><span class="o">*</span><span class="n">t</span><span class="o">.</span><span class="n">cutoff</span><span class="o">.</span><span class="n">units</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">trap_types</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">total_bond_traps</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">total_pair_traps</span> <span class="o">=</span> <span class="mi">0</span>
+        
+        <span class="k">if</span> <span class="n">total_pair_traps</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>  
+            <span class="bp">self</span><span class="o">.</span><span class="n">world_def</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">Template</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">units micro</span>
+<span class="s2">atom_style hybrid sphere paramagnet bond</span>
+<span class="s2">boundary $x_bound $y_bound $z_bound</span>
+<span class="s2">$dimension</span>
+<span class="s2">neighbor 4.0 nsq</span>
+<span class="s2">pair_style hybrid biharmonic $bh_cut lj/cut/dipole/cut $lj_cut $dpl_cut</span>
+<span class="s2">bond_style biharmonic</span>
+<span class="s2">&quot;&quot;&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">world_def</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">world_def</span><span class="o">.</span><span class="n">substitute</span><span class="p">(</span>
+                                <span class="n">x_bound</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">boundaries</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                                <span class="n">y_bound</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">boundaries</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+                                <span class="n">z_bound</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">boundaries</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span>
+                                <span class="n">bh_cut</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bh_cutoff</span><span class="p">,</span>
+                                <span class="n">lj_cut</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lj_cutoff</span><span class="p">,</span>
+                                <span class="n">dpl_cut</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dipole_cutoff</span><span class="o">.</span><span class="n">magnitude</span><span class="p">,</span>
+                                <span class="n">dimension</span> <span class="o">=</span> <span class="n">dimension</span>
+                                <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">world_def</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">Template</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">units micro</span>
+<span class="s2">atom_style hybrid sphere paramagnet bond</span>
+<span class="s2">boundary $x_bound $y_bound $z_bound</span>
+<span class="s2">$dimension</span>
+<span class="s2">neighbor 4.0 nsq</span>
+<span class="s2">pair_style hybrid lj/cut/dipole/cut $lj_cut $dpl_cut</span>
+<span class="s2">bond_style biharmonic</span>
+<span class="s2">&quot;&quot;&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">world_def</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">world_def</span><span class="o">.</span><span class="n">substitute</span><span class="p">(</span>
+                                            <span class="n">x_bound</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">boundaries</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                                            <span class="n">y_bound</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">boundaries</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+                                            <span class="n">z_bound</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">boundaries</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span>
+                                            <span class="n">bh_cut</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bh_cutoff</span><span class="p">,</span>
+                                            <span class="n">lj_cut</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lj_cutoff</span><span class="p">,</span>
+                                            <span class="n">dpl_cut</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dipole_cutoff</span><span class="o">.</span><span class="n">magnitude</span><span class="p">,</span>
+                                            <span class="n">dimension</span> <span class="o">=</span> <span class="n">dimension</span>
+                                            <span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">region_def</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">Template</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">$total_atoms atoms</span>
+<span class="s2">$atom_types atom types</span>
+<span class="s2">$bonds bonds</span>
+<span class="s2">$bonds bond types</span>
+<span class="s2">$spx1 $spx2 xlo xhi</span>
+<span class="s2">$spy1 $spy2 ylo yhi</span>
+<span class="s2">$spz1 $spz2 zlo zhi</span>
+<span class="s2">        &quot;&quot;&quot;</span><span class="p">)</span>
+        
+            
+        <span class="bp">self</span><span class="o">.</span><span class="n">region_def</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">region_def</span><span class="o">.</span><span class="n">substitute</span><span class="p">(</span>
+            <span class="n">total_atoms</span> <span class="o">=</span> <span class="n">total_particles</span><span class="o">+</span><span class="n">total_bond_traps</span><span class="o">+</span><span class="n">total_pair_traps</span><span class="p">,</span>
+            <span class="n">atom_types</span> <span class="o">=</span> <span class="n">particle_types</span><span class="o">+</span><span class="n">trap_types</span><span class="p">,</span>
+            <span class="n">bonds</span> <span class="o">=</span> <span class="n">total_bond_traps</span><span class="p">,</span>
+            <span class="n">spx1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">region</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">magnitude</span><span class="p">,</span>
+            <span class="n">spx2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">region</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">magnitude</span><span class="p">,</span>
+            <span class="n">spy1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">region</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">magnitude</span><span class="p">,</span>
+            <span class="n">spy2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">region</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">magnitude</span><span class="p">,</span>
+            <span class="n">spz1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">region</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span><span class="o">.</span><span class="n">magnitude</span><span class="p">,</span>
+            <span class="n">spz2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">region</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span><span class="o">.</span><span class="n">magnitude</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">interaction_def</span> <span class="o">=</span><span class="n">st</span><span class="o">.</span><span class="n">Template</span><span class="p">(</span>
+            <span class="sd">&quot;&quot;&quot; 1 1 $lj_eps $lj_sgm $lj_cut $dp_cut&quot;&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">substitute</span><span class="p">(</span>
+                <span class="n">lj_eps</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">lj_parameters</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">magnitude</span><span class="p">,</span>
+                <span class="n">lj_sgm</span><span class="o">=</span><span class="p">((</span><span class="mi">2</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">particles</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">radius</span><span class="p">)</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">lj_parameters</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span><span class="o">.</span><span class="n">magnitude</span><span class="p">,</span>
+                <span class="n">lj_cut</span><span class="o">=</span><span class="p">((</span><span class="mi">2</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">particles</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">radius</span><span class="p">)</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">lj_cutoff</span><span class="p">)</span><span class="o">.</span><span class="n">magnitude</span><span class="p">,</span>
+                <span class="n">dp_cut</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dipole_cutoff</span><span class="o">.</span><span class="n">magnitude</span>
+            <span class="p">)</span>
+            
+        <span class="n">lj_interaction_def</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">Template</span><span class="p">(</span>
+            <span class="sd">&quot;&quot;&quot;$type_i $type_j lj/cut/dipole/cut $lj_eps $lj_sgm $lj_cut $dp_cut&quot;&quot;&quot;</span><span class="p">)</span>
+        
+        <span class="n">null_interaction_def</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">Template</span><span class="p">(</span>
+            <span class="sd">&quot;&quot;&quot;$type_i $type_j none&quot;&quot;&quot;</span><span class="p">)</span>
+                 
+        <span class="bp">self</span><span class="o">.</span><span class="n">interaction_def</span> <span class="o">=</span> <span class="p">[]</span>   
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">pi</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">particles</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">j</span><span class="p">,</span><span class="n">pj</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">particles</span><span class="p">[</span><span class="n">i</span><span class="p">:]):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">interaction_def</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">lj_interaction_def</span><span class="o">.</span><span class="n">substitute</span><span class="p">(</span>
+                        <span class="n">type_i</span> <span class="o">=</span> <span class="n">pi</span><span class="o">.</span><span class="n">atom_type</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">type_j</span> <span class="o">=</span> <span class="n">pj</span><span class="o">.</span><span class="n">atom_type</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span>
+                        <span class="n">lj_eps</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">lj_parameters</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">magnitude</span><span class="p">,</span>
+                        <span class="n">lj_sgm</span><span class="o">=</span><span class="p">((</span><span class="n">pj</span><span class="o">.</span><span class="n">radius</span><span class="o">+</span><span class="n">pi</span><span class="o">.</span><span class="n">radius</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">lj_parameters</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span><span class="o">.</span><span class="n">magnitude</span><span class="p">,</span>
+                        <span class="n">lj_cut</span><span class="o">=</span><span class="p">((</span><span class="n">pj</span><span class="o">.</span><span class="n">radius</span><span class="o">+</span><span class="n">pi</span><span class="o">.</span><span class="n">radius</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">lj_cutoff</span><span class="p">)</span><span class="o">.</span><span class="n">magnitude</span><span class="p">,</span>
+                        <span class="n">dp_cut</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dipole_cutoff</span><span class="o">.</span><span class="n">magnitude</span><span class="p">))</span>
+                     
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">pi</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">particles</span><span class="p">):</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">traps</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">j</span><span class="p">,</span><span class="n">tj</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">traps</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="n">tj</span><span class="o">.</span><span class="n">cutoff</span> <span class="o">==</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">um</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">interaction_def</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">null_interaction_def</span><span class="o">.</span><span class="n">substitute</span><span class="p">(</span>
+                            <span class="n">type_i</span> <span class="o">=</span> <span class="n">pi</span><span class="o">.</span><span class="n">atom_type</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">type_j</span> <span class="o">=</span> <span class="n">tj</span><span class="o">.</span><span class="n">atom_type</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">interaction_def</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tj</span><span class="o">.</span><span class="n">pair_def</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">traps</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">ti</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">traps</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">j</span><span class="p">,</span><span class="n">tj</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">traps</span><span class="p">[</span><span class="n">i</span><span class="p">:]):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">interaction_def</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">null_interaction_def</span><span class="o">.</span><span class="n">substitute</span><span class="p">(</span>
+                            <span class="n">type_i</span> <span class="o">=</span> <span class="n">ti</span><span class="o">.</span><span class="n">atom_type</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">type_j</span> <span class="o">=</span> <span class="n">tj</span><span class="o">.</span><span class="n">atom_type</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
+                            
+        <span class="bp">self</span><span class="o">.</span><span class="n">interaction_def</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">interaction_def</span><span class="p">)</span>
+            
+        <span class="c1">#atom_group = &quot;group Atoms type $particle_&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">group_def</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">+</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span>
+            <span class="n">st</span><span class="o">.</span><span class="n">Template</span><span class="p">(</span>
+                <span class="sd">&quot;&quot;&quot;group Atoms type $particle_type</span>
+<span class="sd">&quot;&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">substitute</span><span class="p">(</span>
+                    <span class="n">particle_type</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">atom_type</span><span class="o">+</span><span class="mi">1</span>
+                <span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">particles</span>
+            <span class="p">])</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">traps</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>    
+            <span class="bp">self</span><span class="o">.</span><span class="n">group_def</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span>
+                <span class="n">st</span><span class="o">.</span><span class="n">Template</span><span class="p">(</span>
+                    <span class="sd">&quot;&quot;&quot;group Traps type $particle_type</span>
+<span class="sd">&quot;&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">substitute</span><span class="p">(</span>
+                        <span class="n">particle_type</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">atom_type</span><span class="o">+</span><span class="mi">1</span>
+                        <span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">traps</span>
+                    <span class="p">])</span>
+            
+        <span class="bp">self</span><span class="o">.</span><span class="n">group_def</span> <span class="o">+=</span> <span class="s2">&quot;&quot;&quot;mass * 1</span><span class="se">\n</span><span class="s2">&quot;&quot;&quot;</span>
+        
+        <span class="n">damp</span> <span class="o">=</span> <span class="mf">1e-3</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">us</span>
+        <span class="c1"># self.damp = diffusion*mass/(kb*self.temperature)</span>
+        <span class="c1"># mass = damp/(diffusion/(KbT)) = damp/drag</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">seed</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">1000000</span><span class="p">)</span>
+        
+        <span class="n">fx_no</span> <span class="o">=</span> <span class="mi">2</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">integrator_def</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">Template</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">fix 	$fx_no Atoms bd $temp $damp $seed </span>
+<span class="s2">&quot;&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">substitute</span><span class="p">(</span><span class="n">fx_no</span> <span class="o">=</span> <span class="n">fx_no</span><span class="p">,</span><span class="n">temp</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">temperature</span><span class="o">.</span><span class="n">magnitude</span><span class="p">,</span> <span class="n">damp</span><span class="o">=</span><span class="n">damp</span><span class="o">.</span><span class="n">magnitude</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">seed</span><span class="p">)</span>
+        
+        <span class="n">fx_no</span> <span class="o">=</span> <span class="mi">3</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gravity_force</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">particles</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">mass</span><span class="o">*</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">gravity</span><span class="p">)</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">ureg</span><span class="o">.</span><span class="n">pg</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">um</span><span class="o">/</span><span class="n">ureg</span><span class="o">.</span><span class="n">us</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+        
+        <span class="n">fix_no</span> <span class="o">=</span> <span class="mi">4</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gravity_def</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">Template</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">fix     $fx_no Atoms addforce 0 0 $mg</span>
+<span class="s2">&quot;&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">substitute</span><span class="p">(</span><span class="n">fx_no</span> <span class="o">=</span> <span class="n">fx_no</span><span class="p">,</span> <span class="n">mg</span> <span class="o">=</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">gravity_force</span><span class="o">.</span><span class="n">magnitude</span><span class="p">)</span> <span class="c1"># pg*um/(us^2) (I hope)</span>
+        
+        <span class="n">fx_no</span> <span class="o">=</span> <span class="mi">5</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">enforce2d</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">enforce2d</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">fix 	</span><span class="si">%u</span><span class="s2"> all enforce2d_bd</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">%</span><span class="n">fx_no</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">enforce2d</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+
+        <span class="n">fx_no</span> <span class="o">=</span> <span class="mi">6</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wall_def</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_wall_string</span><span class="p">(</span><span class="n">fx_no</span><span class="p">)</span>
+        
+<div class="viewcode-block" id="world.reset_seed"><a class="viewcode-back" href="../../api.html#magcolloids.world.reset_seed">[docs]</a>    <span class="k">def</span> <span class="nf">reset_seed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">seed</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Resets the seed of the world object for it to be used again. If the seed parameter is used, the seed is set to that. If not, it is a random number between 1 and 1000000 &quot;&quot;&quot;</span>
+        
+        <span class="k">if</span> <span class="n">seed</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">seed</span> <span class="o">=</span> <span class="n">seed</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">seed</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">1000000</span><span class="p">)</span></div></div>
+            
+                
+        
+<div class="viewcode-block" id="field"><a class="viewcode-back" href="../../api.html#magcolloids.field">[docs]</a><span class="k">class</span> <span class="nc">field</span><span class="p">():</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                <span class="n">magnitude</span> <span class="o">=</span> <span class="mi">10</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">mT</span><span class="p">,</span>
+                <span class="n">frequency</span> <span class="o">=</span> <span class="mi">0</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">Hz</span><span class="p">,</span>
+                <span class="n">angle</span> <span class="o">=</span> <span class="mi">0</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">degree</span><span class="p">,</span> 
+                <span class="n">fieldx</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fieldy</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">fieldz</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="n">multibody_iter</span> <span class="o">=</span> <span class="mi">0</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Characteristics of the field that sets the dipole moment of superparamagnetic particles</span>
+<span class="sd">        It&#39;s normally a precessing field, </span>
+<span class="sd">        but every parameter can accept a function as a string in the lammps standard.</span>
+<span class="sd">        Also, the components of the field can be set to a different function by passing a string </span>
+<span class="sd">        to the parameters `fieldx`,`fieldy`,`fieldz`.</span>
+<span class="sd">        Note however that the field functions should be in lammps units</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># in the future the parameters could be input as a dictionary, This would allow us to input a variable number of parameters, specific to the function being applied.</span>
+        
+        <span class="n">permeability</span> <span class="o">=</span> <span class="p">(</span><span class="mf">4e5</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">pN</span><span class="o">/</span><span class="n">ureg</span><span class="o">.</span><span class="n">A</span><span class="o">**</span><span class="mi">2</span> <span class="c1">#pN/A^2</span>
+        
+        <span class="c1">#What is lammps units?</span>
+                
+        <span class="bp">self</span><span class="o">.</span><span class="n">magnitude</span> <span class="o">=</span> <span class="n">magnitude</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">H_magnitude</span> <span class="o">=</span> <span class="p">(</span><span class="n">magnitude</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">ureg</span><span class="o">.</span><span class="n">mT</span><span class="p">)</span><span class="o">/</span><span class="n">permeability</span><span class="p">)</span><span class="o">*</span><span class="mf">1e9</span><span class="o">/</span><span class="mf">2.99e8</span> <span class="c1">#mT to lammps units</span>
+        
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">frequency</span> <span class="o">=</span> <span class="n">frequency</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">ureg</span><span class="o">.</span><span class="n">MHz</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
+            <span class="c1"># TypeError ocurs for strings. This is a manual unit conversion for that case. </span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">frequency</span> <span class="o">=</span> \
+                <span class="p">(</span><span class="n">frequency</span><span class="o">.</span><span class="n">magnitude</span><span class="o">+</span><span class="p">(</span><span class="s2">&quot;*</span><span class="si">%g</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="mi">1</span><span class="o">*</span><span class="n">frequency</span><span class="o">.</span><span class="n">units</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">ureg</span><span class="o">.</span><span class="n">MHz</span><span class="p">)</span><span class="o">.</span><span class="n">magnitude</span><span class="p">))</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">MHz</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">angle</span> <span class="o">=</span> <span class="n">angle</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">ureg</span><span class="o">.</span><span class="n">rad</span><span class="p">)</span><span class="c1">#degrees to radians</span>
+                
+        <span class="bp">self</span><span class="o">.</span><span class="n">multibody_iter</span> <span class="o">=</span> <span class="n">multibody_iter</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fieldx</span> <span class="o">=</span> <span class="s2">&quot;v_Bmag*sin(v_freq*time*2*PI)*sin(v_theta)&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fieldy</span> <span class="o">=</span> <span class="s2">&quot;v_Bmag*cos(v_freq*time*2*PI)*sin(v_theta)&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fieldz</span> <span class="o">=</span> <span class="s2">&quot;v_Bmag*cos(v_theta)&quot;</span>
+        
+    <span class="k">def</span> <span class="nf">create_string</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">variable_def</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">Template</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">variable Bmag atom $magnitude</span>
+<span class="s2">variable freq atom $freq</span>
+<span class="s2">variable theta atom $theta</span>
+
+<span class="s2">variable fieldx atom $fieldx</span>
+<span class="s2">variable fieldy atom $fieldy</span>
+<span class="s2">variable fieldz atom $fieldz</span>
+<span class="s2">&quot;&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">substitute</span><span class="p">(</span>
+                <span class="n">magnitude</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">H_magnitude</span><span class="o">.</span><span class="n">magnitude</span><span class="p">,</span>
+                <span class="n">freq</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">frequency</span><span class="o">.</span><span class="n">magnitude</span><span class="p">,</span>
+                <span class="n">theta</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">angle</span><span class="o">.</span><span class="n">magnitude</span><span class="p">,</span>
+                <span class="n">fieldx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fieldx</span><span class="p">,</span>
+                <span class="n">fieldy</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fieldy</span><span class="p">,</span>
+                <span class="n">fieldz</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fieldz</span>
+                <span class="p">)</span>
+        
+        <span class="bp">self</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fix_def</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">fix 	1 Atoms setdipole v_fieldx v_fieldy v_fieldz </span><span class="si">%u</span><span class="s2"></span>
+<span class="s2">&quot;&quot;&quot;</span><span class="o">%</span><span class="bp">self</span><span class="o">.</span><span class="n">multibody_iter</span></div>
+                   
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">magcolloids</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started.html#walkthrough">Walkthrough</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api.html">API</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, Antonio Ortiz-Ambriz.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.0.3</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

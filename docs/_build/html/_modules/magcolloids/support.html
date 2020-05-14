@@ -1,0 +1,902 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>magcolloids.support &#8212; magcolloids v0.2.0 documentation</title>
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for magcolloids.support</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">matplotlib.animation</span> <span class="k">as</span> <span class="nn">anm</span>
+<span class="kn">import</span> <span class="nn">matplotlib.collections</span> <span class="k">as</span> <span class="nn">clt</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">string</span> <span class="k">as</span> <span class="nn">st</span>
+
+<div class="viewcode-block" id="initial_setup"><a class="viewcode-back" href="../../api.html#magcolloids.initial_setup">[docs]</a><span class="k">def</span> <span class="nf">initial_setup</span><span class="p">(</span><span class="n">n_of_particles</span><span class="p">,</span> <span class="n">packing</span> <span class="o">=</span> <span class="mf">0.3</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span> <span class="n">radius</span><span class="o">=</span><span class="mf">1.4</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">    This function returns an array of initial positions for confined particles, and</span>
+<span class="sd">    a region where these particles are enclosed with a packing fraction &quot;packing&quot;</span>
+<span class="sd">    The particles are initially set in a square array, as far from each other as possible.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">part_in_edge</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">n_of_particles</span><span class="p">)))</span>
+    <span class="n">n_of_particles</span> <span class="o">=</span> <span class="n">part_in_edge</span><span class="o">**</span><span class="mi">2</span>
+
+    <span class="n">area_particle</span> <span class="o">=</span> <span class="n">n_of_particles</span><span class="o">*</span><span class="n">radius</span><span class="o">**</span><span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span>
+    <span class="n">area_region</span> <span class="o">=</span> <span class="n">area_particle</span><span class="o">/</span><span class="n">packing</span>
+
+    <span class="n">length_region</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">area_region</span><span class="p">)</span>
+    <span class="n">part_separation</span> <span class="o">=</span> <span class="n">length_region</span><span class="o">/</span><span class="n">part_in_edge</span>
+    
+    <span class="n">x_loc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span>
+        <span class="o">-</span><span class="n">length_region</span><span class="o">/</span><span class="mi">2</span><span class="o">+</span><span class="n">part_separation</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span>
+        <span class="n">length_region</span><span class="o">/</span><span class="mi">2</span><span class="o">-</span><span class="n">part_separation</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span><span class="n">part_in_edge</span><span class="p">)</span>
+    <span class="n">y_loc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span>
+        <span class="o">-</span><span class="n">length_region</span><span class="o">/</span><span class="mi">2</span><span class="o">+</span><span class="n">part_separation</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span>
+        <span class="n">length_region</span><span class="o">/</span><span class="mi">2</span><span class="o">-</span><span class="n">part_separation</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span><span class="n">part_in_edge</span><span class="p">)</span>
+
+    <span class="p">[</span><span class="n">X</span><span class="p">,</span><span class="n">Y</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">x_loc</span><span class="p">,</span><span class="n">y_loc</span><span class="p">)</span>
+    <span class="n">Z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">X</span><span class="p">))</span>
+
+    <span class="n">initial_positions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">z</span><span class="p">]</span> <span class="k">for</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">z</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span><span class="n">Y</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span><span class="n">Z</span><span class="o">.</span><span class="n">flatten</span><span class="p">())])</span>
+    
+    <span class="k">if</span> <span class="n">part_separation</span><span class="o">&lt;</span><span class="mi">2</span><span class="o">*</span><span class="n">radius</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;packing is too high&quot;</span><span class="p">)</span>
+
+    <span class="n">region</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">length_region</span><span class="p">),</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">length_region</span><span class="p">),</span><span class="n">height</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">region</span><span class="p">,</span> <span class="n">initial_positions</span></div>
+    
+<span class="k">def</span> <span class="nf">ordered_dimers</span><span class="p">(</span><span class="n">n_of_particles</span> <span class="o">=</span> <span class="mi">150</span><span class="p">,</span> <span class="n">packing</span><span class="o">=</span><span class="mf">0.35</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="mf">4.1</span><span class="p">,</span> <span class="n">r</span> <span class="o">=</span> <span class="mf">1.4</span><span class="p">,</span> <span class="n">theta</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">verbose</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This function returns an array of initial positions of a given packing fraction, arranged in a hexagonal lattice of preformed dimers. Dimers are in contact with each other and each colloid is in contact with an opposite wall. All dimmers are point in the same direction which is given by the angle theta</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="n">N_dimers</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">Nt</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">Nt</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span>
+
+    <span class="n">N_columns</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">Nt</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">Nt</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span><span class="o">*</span><span class="mi">2</span>
+    <span class="n">N_rows</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">Nt</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">Nt</span><span class="o">/</span><span class="n">N_columns</span><span class="p">(</span><span class="n">Nt</span><span class="p">))</span>
+
+    <span class="n">N_particles</span> <span class="o">=</span> <span class="mi">2</span><span class="o">*</span><span class="n">N_columns</span><span class="p">(</span><span class="n">N_dimers</span><span class="p">(</span><span class="n">n_of_particles</span><span class="p">))</span><span class="o">*</span><span class="n">N_rows</span><span class="p">(</span><span class="n">N_dimers</span><span class="p">(</span><span class="n">n_of_particles</span><span class="p">))</span>
+
+    <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Creating </span><span class="si">%u</span><span class="s2"> particles; </span><span class="si">%u</span><span class="s2"> dimers </span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">%</span><span class="p">(</span><span class="n">N_particles</span><span class="p">,</span> <span class="n">N_particles</span><span class="o">/</span><span class="mi">2</span><span class="p">))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;packing should be&quot;</span><span class="p">,</span> <span class="n">packing</span><span class="p">)</span>
+
+    <span class="n">a</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">phi</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">8</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="p">(</span><span class="n">phi</span><span class="o">*</span><span class="mi">3</span><span class="o">**</span><span class="p">(</span><span class="mi">3</span><span class="o">/</span><span class="mi">2</span><span class="p">)))</span>
+    
+    <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;The lattice constant is a = </span><span class="si">%2.3f</span><span class="s2">&quot;</span><span class="o">%</span><span class="n">a</span><span class="p">(</span><span class="n">packing</span><span class="p">))</span>
+        
+    <span class="n">size</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">phi</span><span class="p">,</span><span class="n">Nt</span><span class="p">:</span> <span class="p">(</span><span class="n">N_columns</span><span class="p">(</span><span class="n">Nt</span><span class="p">)</span><span class="o">*</span><span class="n">a</span><span class="p">(</span><span class="n">phi</span><span class="p">),</span><span class="n">N_rows</span><span class="p">(</span><span class="n">Nt</span><span class="p">)</span><span class="o">*</span><span class="n">a</span><span class="p">(</span><span class="n">phi</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">3</span><span class="o">/</span><span class="mi">4</span><span class="p">))</span>
+    
+    <span class="k">def</span> <span class="nf">lattice</span><span class="p">(</span><span class="n">Nt</span><span class="p">):</span>
+
+        <span class="n">grid</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">N_columns</span><span class="p">(</span><span class="n">Nt</span><span class="p">)),</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">N_rows</span><span class="p">(</span><span class="n">Nt</span><span class="p">)))</span>
+
+        <span class="n">primitive_vectors</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">1</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">3</span><span class="o">/</span><span class="mi">4</span><span class="p">)]])</span>
+
+        <span class="n">lattice</span> <span class="o">=</span> <span class="p">(</span><span class="n">grid</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">primitive_vectors</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">grid</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="n">primitive_vectors</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span>
+                   <span class="n">grid</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">primitive_vectors</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">grid</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="n">primitive_vectors</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">])</span>
+
+        <span class="n">lattice</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mod</span><span class="p">(</span><span class="n">lattice</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">N_columns</span><span class="p">(</span><span class="n">Nt</span><span class="p">)),</span><span class="n">np</span><span class="o">.</span><span class="n">mod</span><span class="p">(</span><span class="n">lattice</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">N_rows</span><span class="p">(</span><span class="n">Nt</span><span class="p">)))</span>
+
+        <span class="k">return</span> <span class="n">lattice</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="mf">0.25</span><span class="p">,</span><span class="n">lattice</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="mf">0.5</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">3</span><span class="o">/</span><span class="mi">4</span><span class="p">)</span>
+    
+    <span class="n">h</span> <span class="o">=</span> <span class="n">height</span><span class="o">/</span><span class="n">r</span>
+
+    <span class="n">ps_in_dimer</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span>
+            <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">h</span><span class="o">*</span><span class="p">(</span><span class="mi">4</span><span class="o">-</span><span class="n">h</span><span class="p">))</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">theta</span><span class="p">),</span>
+             <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">h</span><span class="o">*</span><span class="p">(</span><span class="mi">4</span><span class="o">-</span><span class="n">h</span><span class="p">))</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="p">),</span><span class="n">h</span><span class="o">-</span><span class="mi">2</span><span class="p">],</span>
+            <span class="p">[</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">h</span><span class="o">*</span><span class="p">(</span><span class="mi">4</span><span class="o">-</span><span class="n">h</span><span class="p">))</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">theta</span><span class="p">),</span>
+             <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">h</span><span class="o">*</span><span class="p">(</span><span class="mi">4</span><span class="o">-</span><span class="n">h</span><span class="p">))</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="p">),</span><span class="mi">2</span><span class="o">-</span><span class="n">h</span><span class="p">]])</span>
+
+    <span class="n">positions</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">Nt</span><span class="p">,</span><span class="n">phi</span><span class="p">,</span><span class="n">rho</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+            <span class="p">[[</span><span class="n">r</span><span class="o">*</span><span class="n">a</span><span class="p">(</span><span class="n">packing</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span><span class="o">*</span><span class="n">l1</span><span class="p">,</span><span class="n">r</span><span class="o">*</span><span class="n">a</span><span class="p">(</span><span class="n">packing</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span><span class="o">*</span><span class="n">l2</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">p</span><span class="o">/</span><span class="n">rho</span>
+             <span class="k">for</span> <span class="n">l1</span><span class="p">,</span><span class="n">l2</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
+                 <span class="n">lattice</span><span class="p">(</span><span class="n">N_dimers</span><span class="p">(</span><span class="n">Nt</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span>
+                 <span class="n">lattice</span><span class="p">(</span><span class="n">N_dimers</span><span class="p">(</span><span class="n">Nt</span><span class="p">))[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">flatten</span><span class="p">())</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">ps_in_dimer</span> <span class="p">])</span>
+    
+    <span class="k">def</span> <span class="nf">region</span><span class="p">(</span><span class="n">N_dimers</span><span class="p">,</span><span class="n">h</span><span class="p">)</span> <span class="p">:</span>
+        <span class="n">regionsize</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">size</span><span class="p">(</span><span class="n">packing</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span><span class="n">N_dimers</span><span class="p">))</span>
+        <span class="n">regionsize</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">regionsize</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">regionsize</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">h</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">regionsize</span>
+    
+    <span class="n">region</span> <span class="o">=</span> <span class="n">region</span><span class="p">(</span><span class="n">N_dimers</span><span class="p">(</span><span class="n">N_particles</span><span class="p">),</span><span class="n">h</span><span class="p">)</span><span class="o">*</span><span class="n">r</span>
+    <span class="n">positions</span> <span class="o">=</span> <span class="n">positions</span><span class="p">(</span><span class="n">N_particles</span><span class="p">,</span><span class="n">packing</span><span class="p">,</span><span class="n">r</span><span class="p">)</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">region</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">2</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="p">,[</span><span class="mi">0</span><span class="p">])</span>
+    
+    <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;The region is &quot;</span><span class="p">,</span> <span class="n">region</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">positions</span><span class="p">),</span><span class="s2">&quot; positions created&quot;</span><span class="p">)</span>
+        <span class="n">region_a</span> <span class="o">=</span> <span class="n">region</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">region</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">partic_a</span> <span class="o">=</span> <span class="mi">4</span><span class="o">/</span><span class="mi">3</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">r</span><span class="o">**</span><span class="mi">2</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">positions</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;packing is actually </span><span class="si">%2.2f</span><span class="s2">/</span><span class="si">%2.2f</span><span class="s2"> = </span><span class="si">%2.2f</span><span class="s2">&quot;</span><span class="o">%</span><span class="p">(</span><span class="n">partic_a</span><span class="p">,</span><span class="n">region_a</span><span class="p">,</span><span class="n">partic_a</span><span class="o">/</span><span class="n">region_a</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">region</span><span class="p">,</span> <span class="n">positions</span>
+
+<span class="k">def</span> <span class="nf">hexagonal_order</span><span class="p">(</span><span class="n">n_of_particles</span> <span class="o">=</span> <span class="mi">150</span><span class="p">,</span> <span class="n">packing</span><span class="o">=</span><span class="mf">0.35</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="mf">4.1</span><span class="p">,</span> <span class="n">r</span> <span class="o">=</span> <span class="mf">1.4</span><span class="p">,</span> <span class="n">theta</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">verbose</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This function returns an array of initial positions of a given packing fraction, arranged in a hexagonal lattice of preformed dimers. Dimers are in contact with each other and each colloid is in contact with an opposite wall. All dimmers are point in the same direction which is given by the angle theta</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="n">N_columns</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">Nt</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">Nt</span><span class="p">))</span>
+    <span class="n">N_rows</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">Nt</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">Nt</span><span class="o">/</span><span class="n">N_columns</span><span class="p">(</span><span class="n">Nt</span><span class="p">))</span>
+
+    <span class="n">N_particles</span> <span class="o">=</span> <span class="n">N_columns</span><span class="p">(</span><span class="n">n_of_particles</span><span class="p">)</span><span class="o">*</span><span class="n">N_rows</span><span class="p">(</span><span class="n">n_of_particles</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Creating </span><span class="si">%u</span><span class="s2"> particles; </span><span class="si">%u</span><span class="s2"> dimers </span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">%</span><span class="p">(</span><span class="n">N_particles</span><span class="p">,</span> <span class="n">N_particles</span><span class="o">/</span><span class="mi">2</span><span class="p">))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;packing should be&quot;</span><span class="p">,</span> <span class="n">packing</span><span class="p">)</span>
+
+    <span class="n">a</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">phi</span><span class="p">:</span> <span class="n">r</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="p">(</span><span class="n">phi</span><span class="o">*</span><span class="mi">3</span><span class="o">**</span><span class="p">(</span><span class="mi">1</span><span class="o">/</span><span class="mi">2</span><span class="p">)))</span>
+    
+    <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;The lattice constant is a = </span><span class="si">%2.3f</span><span class="s2">&quot;</span><span class="o">%</span><span class="n">a</span><span class="p">(</span><span class="n">packing</span><span class="p">))</span>
+        
+    <span class="n">size</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">phi</span><span class="p">,</span><span class="n">Nt</span><span class="p">:</span> <span class="p">(</span><span class="n">N_columns</span><span class="p">(</span><span class="n">Nt</span><span class="p">)</span><span class="o">*</span><span class="n">a</span><span class="p">(</span><span class="n">phi</span><span class="p">),</span><span class="n">N_rows</span><span class="p">(</span><span class="n">Nt</span><span class="p">)</span><span class="o">*</span><span class="n">a</span><span class="p">(</span><span class="n">phi</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">3</span><span class="o">/</span><span class="mi">4</span><span class="p">))</span>
+    
+    <span class="k">def</span> <span class="nf">lattice</span><span class="p">(</span><span class="n">Nt</span><span class="p">):</span>
+
+        <span class="n">grid</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">N_columns</span><span class="p">(</span><span class="n">Nt</span><span class="p">)),</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">N_rows</span><span class="p">(</span><span class="n">Nt</span><span class="p">)))</span>
+
+        <span class="n">primitive_vectors</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">1</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">3</span><span class="o">/</span><span class="mi">4</span><span class="p">)]])</span>
+
+        <span class="n">lattice</span> <span class="o">=</span> <span class="p">(</span><span class="n">grid</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">primitive_vectors</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">grid</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="n">primitive_vectors</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span>
+                   <span class="n">grid</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">primitive_vectors</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">grid</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="n">primitive_vectors</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">])</span>
+
+        <span class="n">lattice</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mod</span><span class="p">(</span><span class="n">lattice</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">N_columns</span><span class="p">(</span><span class="n">Nt</span><span class="p">)),</span><span class="n">np</span><span class="o">.</span><span class="n">mod</span><span class="p">(</span><span class="n">lattice</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">N_rows</span><span class="p">(</span><span class="n">Nt</span><span class="p">)))</span>
+
+        <span class="k">return</span> <span class="n">lattice</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="mf">0.25</span><span class="p">,</span><span class="n">lattice</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="mf">0.5</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">3</span><span class="o">/</span><span class="mi">4</span><span class="p">)</span>
+
+    <span class="n">positions</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">Nt</span><span class="p">,</span><span class="n">phi</span><span class="p">,</span> <span class="n">r</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+            <span class="p">[[</span><span class="n">a</span><span class="p">(</span><span class="n">phi</span><span class="p">)</span><span class="o">*</span><span class="n">l1</span><span class="p">,</span><span class="n">a</span><span class="p">(</span><span class="n">phi</span><span class="p">)</span><span class="o">*</span><span class="n">l2</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span>
+             <span class="k">for</span> <span class="n">l1</span><span class="p">,</span><span class="n">l2</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
+                 <span class="n">lattice</span><span class="p">(</span><span class="n">Nt</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span>
+                 <span class="n">lattice</span><span class="p">(</span><span class="n">Nt</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">flatten</span><span class="p">())])</span>
+    
+    <span class="k">def</span> <span class="nf">region</span><span class="p">(</span><span class="n">N_particles</span><span class="p">,</span><span class="n">h</span><span class="p">,</span><span class="n">packing</span><span class="p">,</span><span class="n">r</span><span class="p">)</span> <span class="p">:</span>
+        <span class="n">regionsize</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">size</span><span class="p">(</span><span class="n">packing</span><span class="p">,</span><span class="n">N_particles</span><span class="p">))</span>
+        <span class="n">region_area</span> <span class="o">=</span> <span class="n">regionsize</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">regionsize</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">partic_area</span> <span class="o">=</span> <span class="n">N_particles</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">r</span><span class="o">**</span><span class="mi">2</span>
+        <span class="n">target_area</span> <span class="o">=</span> <span class="n">partic_area</span><span class="o">/</span><span class="n">packing</span>
+        <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;region was scaled by </span><span class="si">%s</span><span class="s2">&quot;</span><span class="o">%</span><span class="p">(</span><span class="n">target_area</span><span class="o">/</span><span class="n">region_area</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="mi">1</span><span class="o">/</span><span class="mi">2</span><span class="p">))</span>
+        <span class="n">regionsize</span> <span class="o">=</span> <span class="n">regionsize</span> <span class="o">*</span> <span class="p">(</span><span class="n">target_area</span><span class="o">/</span><span class="n">region_area</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="mi">1</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span>
+        
+        <span class="n">regionsize</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">regionsize</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">regionsize</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">h</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">regionsize</span>
+    
+    <span class="n">region</span> <span class="o">=</span> <span class="n">region</span><span class="p">(</span><span class="n">N_particles</span><span class="p">,</span><span class="n">height</span><span class="p">,</span><span class="n">packing</span><span class="p">,</span><span class="n">r</span><span class="p">)</span>
+    <span class="n">positions</span> <span class="o">=</span> <span class="n">positions</span><span class="p">(</span><span class="n">N_particles</span><span class="p">,</span> <span class="n">packing</span><span class="p">,</span> <span class="n">r</span><span class="p">)</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">region</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">2</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="p">,[</span><span class="mi">0</span><span class="p">])</span>
+
+    <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;The region is &quot;</span><span class="p">,</span> <span class="n">region</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">positions</span><span class="p">),</span><span class="s2">&quot; positions created&quot;</span><span class="p">)</span>
+        <span class="n">region_a</span> <span class="o">=</span> <span class="n">region</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">region</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">partic_a</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">r</span><span class="o">**</span><span class="mi">2</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">positions</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;packing is actually </span><span class="si">%2.2f</span><span class="s2">/</span><span class="si">%2.2f</span><span class="s2"> = </span><span class="si">%2.2f</span><span class="s2">&quot;</span><span class="o">%</span><span class="p">(</span><span class="n">partic_a</span><span class="p">,</span><span class="n">region_a</span><span class="p">,</span><span class="n">partic_a</span><span class="o">/</span><span class="n">region_a</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">region</span><span class="p">,</span> <span class="n">positions</span>
+	
+<div class="viewcode-block" id="animate_trj"><a class="viewcode-back" href="../../api.html#magcolloids.animate_trj">[docs]</a><span class="k">def</span> <span class="nf">animate_trj</span><span class="p">(</span><span class="n">trj</span><span class="p">,</span> <span class="n">sim</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">region</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">radius</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span><span class="n">framerate</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">verb</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">step</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">speedup</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">preserve_limits</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This function animates the trajectory resulting from a confined dimer simulation. It displays the z direction as a colormap and the particles in the x and y direction. The simulation is required as argument to obtain parameters like the region size and the particles radius.</span>
+<span class="sd">    Optional parameters are:</span>
+<span class="sd">    * ax: an axis object to use for creating the plot.</span>
+<span class="sd">    * start: start time of the simulation if not the whole time is required. The default is 0. </span>
+<span class="sd">    * end: end time of the simulation. The default is the total simulation time.</span>
+<span class="sd">    * step = 1. The framerate, so to speak. </span>
+<span class="sd">    * verb = False. If verb = True, the routine prints indicators that is running. </span>
+<span class="sd">    * speedup allows us to do faster videos. Default is 1, which means normal ratio.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="kn">from</span> <span class="nn">mpl_toolkits.axes_grid1</span> <span class="kn">import</span> <span class="n">make_axes_locatable</span>
+    
+    <span class="n">idx</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">IndexSlice</span>
+    
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">ax</span><span class="p">:</span>
+        <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">7</span><span class="p">,</span><span class="mi">7</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span> 
+        <span class="n">fig</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">figure</span>
+        
+    <span class="k">if</span> <span class="n">sim</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">region</span> <span class="o">=</span> <span class="p">[</span><span class="n">r</span><span class="o">.</span><span class="n">magnitude</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">sim</span><span class="o">.</span><span class="n">world</span><span class="o">.</span><span class="n">region</span><span class="p">]</span>
+        <span class="n">radius</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">particles</span><span class="o">.</span><span class="n">radius</span><span class="o">.</span><span class="n">magnitude</span> 
+        <span class="n">framerate</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">framerate</span><span class="o">.</span><span class="n">magnitude</span>
+        <span class="c1">#runtime = sim.total_time.magnitude</span>
+        <span class="n">timestep</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">timestep</span><span class="o">.</span><span class="n">magnitude</span>
+
+    <span class="n">particles</span> <span class="o">=</span> <span class="n">trj</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">get_level_values</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span>
+    <span class="n">n_of_particles</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">trj</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">get_level_values</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">unique</span><span class="p">())</span>
+
+    <span class="n">lammps_time</span> <span class="o">=</span> <span class="mf">1e6</span><span class="p">;</span>
+    
+    <span class="c1">#dt_data = np.round(1/(timestep*framerate)) # Data timestep in lammps_time</span>
+    
+    <span class="n">frames</span> <span class="o">=</span> <span class="n">trj</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">get_level_values</span><span class="p">(</span><span class="s1">&#39;frame&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span><span class="o">.</span><span class="n">values</span>
+    
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">end</span><span class="p">:</span>
+        <span class="n">end</span> <span class="o">=</span> <span class="n">frames</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">/</span><span class="n">framerate</span>
+    
+    <span class="n">frame_id_min</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint</span><span class="p">(</span><span class="n">start</span><span class="o">*</span><span class="n">framerate</span><span class="p">)</span>
+    <span class="n">frame_id_max</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint</span><span class="p">(</span><span class="n">end</span><span class="o">*</span><span class="n">framerate</span><span class="p">)</span>
+    
+    <span class="n">trj</span> <span class="o">=</span> <span class="n">trj</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">idx</span><span class="p">[</span><span class="n">frames</span><span class="p">[</span><span class="n">frame_id_min</span><span class="p">:</span><span class="n">frame_id_max</span><span class="p">:</span><span class="n">step</span><span class="p">],:]]</span>
+    <span class="n">frames</span> <span class="o">=</span> <span class="n">trj</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">get_level_values</span><span class="p">(</span><span class="s1">&#39;frame&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span><span class="o">.</span><span class="n">values</span>
+    <span class="c1">#dt_video = np.mean(np.diff(frames))*timestep*1000/speedup # video timestep in miliseconds</span>
+    <span class="n">dt_video</span> <span class="o">=</span> <span class="mi">1000</span><span class="o">/</span><span class="n">framerate</span><span class="o">/</span><span class="n">speedup</span> <span class="c1"># video timestep in miliseconds</span>
+    
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">preserve_limits</span><span class="p">:</span>
+    
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="n">region</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">region</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="n">region</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="n">region</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">aspect</span><span class="o">=</span><span class="s1">&#39;equal&#39;</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;$x [\mu</span><span class="si">{m}</span><span class="s2">]$&quot;</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;$y [\mu</span><span class="si">{m}</span><span class="s2">]$&quot;</span><span class="p">)</span>
+    
+    <span class="n">patches</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">p</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">particles</span><span class="p">):</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">Circle</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">radius</span><span class="p">)</span>
+        <span class="n">patches</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
+
+    <span class="n">p</span> <span class="o">=</span> <span class="n">clt</span><span class="o">.</span><span class="n">PatchCollection</span><span class="p">(</span><span class="n">patches</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">plt</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">RdBu</span><span class="p">)</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">set_array</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">set_clim</span><span class="p">([</span><span class="n">region</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span><span class="o">+</span><span class="n">radius</span><span class="p">,</span><span class="n">region</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span><span class="o">-</span><span class="n">radius</span><span class="p">])</span>
+    
+    <span class="n">divider</span> <span class="o">=</span> <span class="n">make_axes_locatable</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
+    <span class="n">cax</span> <span class="o">=</span> <span class="n">divider</span><span class="o">.</span><span class="n">append_axes</span><span class="p">(</span><span class="s2">&quot;right&quot;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="s2">&quot;5%&quot;</span><span class="p">,</span> <span class="n">pad</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">p</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;$z [\mu</span><span class="si">{m}</span><span class="s1">]$&#39;</span><span class="p">,</span><span class="n">cax</span><span class="o">=</span><span class="n">cax</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">init</span><span class="p">():</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">add_collection</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">p</span><span class="p">,</span>
+
+    <span class="k">def</span> <span class="nf">animate</span><span class="p">(</span><span class="n">frame</span><span class="p">):</span>
+        
+        <span class="n">particles_in</span> <span class="o">=</span> <span class="n">trj</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">idx</span><span class="p">[</span><span class="n">frames</span><span class="p">[</span><span class="n">frame</span><span class="p">],:],:]</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">get_level_values</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span>
+        <span class="n">particles_not_in</span> <span class="o">=</span> <span class="p">[</span><span class="n">prt</span> <span class="k">for</span> <span class="n">prt</span> <span class="ow">in</span> <span class="n">particles</span> <span class="k">if</span> <span class="n">prt</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">particles_in</span><span class="p">]</span>
+        
+        <span class="k">if</span> <span class="n">verb</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;frame[</span><span class="si">%u</span><span class="s2">] is &quot;</span><span class="o">%</span><span class="n">frame</span><span class="p">,</span><span class="n">frames</span><span class="p">[</span><span class="n">frame</span><span class="p">])</span>
+        <span class="k">for</span> <span class="p">(</span><span class="n">part_id</span><span class="p">,</span><span class="n">particle</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">particles_in</span><span class="p">):</span>
+            
+            <span class="n">patches</span><span class="p">[</span><span class="n">part_id</span><span class="p">]</span><span class="o">.</span><span class="n">center</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">trj</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">idx</span><span class="p">[</span><span class="n">frames</span><span class="p">[</span><span class="n">frame</span><span class="p">],</span><span class="n">particle</span><span class="p">],</span><span class="s1">&#39;x&#39;</span><span class="p">],</span>
+                <span class="n">trj</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">idx</span><span class="p">[</span><span class="n">frames</span><span class="p">[</span><span class="n">frame</span><span class="p">],</span><span class="n">particle</span><span class="p">],</span><span class="s1">&#39;y&#39;</span><span class="p">])</span>
+        
+        <span class="k">for</span> <span class="p">(</span><span class="n">part_id</span><span class="p">,</span><span class="n">particle</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">particles_not_in</span><span class="p">):</span>
+            
+            <span class="n">patches</span><span class="p">[</span><span class="n">part_id</span><span class="o">+</span><span class="nb">len</span><span class="p">(</span><span class="n">particles_in</span><span class="p">)]</span><span class="o">.</span><span class="n">visible</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="n">patches</span><span class="p">[</span><span class="n">part_id</span><span class="o">+</span><span class="nb">len</span><span class="p">(</span><span class="n">particles_in</span><span class="p">)]</span><span class="o">.</span><span class="n">center</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="o">*</span><span class="n">region</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="mi">2</span><span class="o">*</span><span class="n">region</span><span class="p">[</span><span class="mi">2</span><span class="p">]]</span>
+        
+        <span class="n">p</span><span class="o">.</span><span class="n">set_paths</span><span class="p">(</span><span class="n">patches</span><span class="p">)</span>
+        <span class="n">p</span><span class="o">.</span><span class="n">set_array</span><span class="p">(</span><span class="n">trj</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">idx</span><span class="p">[</span><span class="n">frames</span><span class="p">[</span><span class="n">frame</span><span class="p">],:],</span><span class="s1">&#39;z&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">add_collection</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">p</span><span class="p">,</span>
+    
+    <span class="k">if</span> <span class="n">verb</span><span class="p">:</span> 
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;started animating&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">frames</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">dt_video</span><span class="p">)</span>    
+    
+    <span class="n">anim</span> <span class="o">=</span> <span class="n">anm</span><span class="o">.</span><span class="n">FuncAnimation</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="n">animate</span><span class="p">,</span> <span class="n">init_func</span><span class="o">=</span><span class="n">init</span><span class="p">,</span>
+                                   <span class="n">frames</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">frames</span><span class="p">),</span> <span class="n">interval</span><span class="o">=</span><span class="n">dt_video</span><span class="p">,</span> <span class="n">blit</span><span class="o">=</span><span class="kc">True</span><span class="p">);</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">anim</span><span class="o">.</span><span class="n">_fig</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">anim</span></div>
+
+<span class="k">def</span> <span class="nf">draw_trj</span><span class="p">(</span><span class="n">trj</span><span class="p">,</span><span class="n">sim</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">region</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">radius</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">iframe</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span><span class="n">ax</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="kn">from</span> <span class="nn">mpl_toolkits.axes_grid1</span> <span class="kn">import</span> <span class="n">make_axes_locatable</span>
+    <span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">    displays a trajectory statically. </span>
+<span class="sd">    If iframe is given, it displays particles in the frame specified by the index iframe. </span>
+<span class="sd">    If it isn&#39;t given, then it displays the last frame</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">ax</span><span class="p">:</span>
+        <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">7</span><span class="p">,</span><span class="mi">7</span><span class="p">))</span>
+    
+    <span class="k">if</span> <span class="n">sim</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">region</span> <span class="o">=</span> <span class="p">[</span><span class="n">r</span><span class="o">.</span><span class="n">magnitude</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">sim</span><span class="o">.</span><span class="n">world</span><span class="o">.</span><span class="n">region</span><span class="p">]</span>
+        <span class="n">radius</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">particles</span><span class="o">.</span><span class="n">radius</span><span class="o">.</span><span class="n">magnitude</span> 
+
+    <span class="n">idx</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">IndexSlice</span>
+    <span class="n">particles</span> <span class="o">=</span> <span class="n">trj</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">get_level_values</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span>
+    <span class="n">n_of_particles</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">trj</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">get_level_values</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">unique</span><span class="p">())</span>
+    <span class="n">frames</span> <span class="o">=</span> <span class="n">trj</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">get_level_values</span><span class="p">(</span><span class="s1">&#39;frame&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span>
+    
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="n">region</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">region</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="n">region</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="n">region</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">aspect</span><span class="o">=</span><span class="s1">&#39;equal&#39;</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;$x [\mu</span><span class="si">{m}</span><span class="s2">]$&quot;</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;$y [\mu</span><span class="si">{m}</span><span class="s2">]$&quot;</span><span class="p">)</span>
+    
+    <span class="n">patches</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">frames</span><span class="p">,</span><span class="n">iframe</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">p</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">particles</span><span class="p">):</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">Circle</span><span class="p">(</span>
+            <span class="p">(</span><span class="n">trj</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">idx</span><span class="p">[</span><span class="n">frames</span><span class="p">[</span><span class="n">iframe</span><span class="p">],</span><span class="n">p</span><span class="p">],</span><span class="s1">&#39;x&#39;</span><span class="p">],</span><span class="n">trj</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">idx</span><span class="p">[</span><span class="n">frames</span><span class="p">[</span><span class="n">iframe</span><span class="p">],</span><span class="n">p</span><span class="p">],</span><span class="s1">&#39;y&#39;</span><span class="p">]),</span> <span class="n">radius</span><span class="p">)</span>
+        <span class="n">patches</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
+
+    <span class="n">p</span> <span class="o">=</span> <span class="n">clt</span><span class="o">.</span><span class="n">PatchCollection</span><span class="p">(</span><span class="n">patches</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">plt</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">RdBu</span><span class="p">)</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">set_array</span><span class="p">(</span><span class="n">trj</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">idx</span><span class="p">[</span><span class="n">frames</span><span class="p">[</span><span class="n">iframe</span><span class="p">],:],</span><span class="s1">&#39;z&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">set_clim</span><span class="p">([</span><span class="n">region</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span><span class="o">+</span><span class="n">radius</span><span class="p">,</span><span class="n">region</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span><span class="o">-</span><span class="n">radius</span><span class="p">])</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">add_collection</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+            
+    <span class="n">divider</span> <span class="o">=</span> <span class="n">make_axes_locatable</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
+    <span class="n">cax</span> <span class="o">=</span> <span class="n">divider</span><span class="o">.</span><span class="n">append_axes</span><span class="p">(</span><span class="s2">&quot;right&quot;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="s2">&quot;5%&quot;</span><span class="p">,</span> <span class="n">pad</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">p</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;$z [\mu</span><span class="si">{m}</span><span class="s1">]$&#39;</span><span class="p">,</span><span class="n">cax</span><span class="o">=</span><span class="n">cax</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">ax</span>
+    
+<span class="k">def</span> <span class="nf">display_animation_direct</span><span class="p">(</span><span class="n">sim</span><span class="p">,</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kargs</span><span class="p">):</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span><span class="o">&lt;</span><span class="mi">1</span><span class="p">:</span>
+        <span class="n">trj</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">read_trj</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;reading&quot;</span><span class="o">+</span><span class="n">args</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span> 
+        <span class="n">trj</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="n">anim</span> <span class="o">=</span> <span class="n">animate_trj</span><span class="p">(</span><span class="n">trj</span><span class="p">,</span><span class="n">sim</span><span class="p">,</span><span class="o">**</span><span class="n">kargs</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">anim</span><span class="o">.</span><span class="n">to_html5_video</span><span class="p">()</span>
+
+<span class="k">def</span> <span class="nf">draw_exp_phase_diagram</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="kn">from</span> <span class="nn">scipy.misc</span> <span class="kn">import</span> <span class="n">imread</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">ax</span><span class="p">:</span>
+        <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">8</span><span class="p">))</span>
+
+    <span class="n">img</span> <span class="o">=</span> <span class="n">imread</span><span class="p">(</span><span class="s1">&#39;ExperimentPhaseDiagram.png&#39;</span><span class="p">)</span>
+    <span class="n">img</span><span class="p">[:,:,</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="n">img</span><span class="p">[:,:,</span><span class="mi">3</span><span class="p">]</span><span class="o">*</span><span class="mf">0.5</span>
+    <span class="n">extent</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">2.75</span><span class="p">,</span> <span class="mf">5.7</span><span class="p">]</span>
+
+    <span class="n">extent_size</span> <span class="o">=</span> <span class="p">[</span><span class="n">extent</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">extent</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">extent</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">-</span><span class="n">extent</span><span class="p">[</span><span class="mi">2</span><span class="p">]]</span>
+    <span class="n">img_size</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">img</span><span class="p">)[</span><span class="mi">0</span><span class="p">:</span><span class="mi">2</span><span class="p">]</span>
+    <span class="n">extent_ratio</span> <span class="o">=</span> <span class="n">extent_size</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="n">extent_size</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">img_ratio</span> <span class="o">=</span> <span class="n">img_size</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="n">img_size</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+
+    <span class="n">ax</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">img</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">extent</span><span class="o">=</span><span class="n">extent</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">aspect</span><span class="o">=</span><span class="n">extent_ratio</span><span class="o">*</span><span class="n">img_ratio</span><span class="p">)</span>
+    
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;Area Packing Fraction $\phi$&quot;</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;height&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">ax</span>
+    
+<span class="c1">## Dimer Finding Functions </span>
+<span class="k">def</span> <span class="nf">neighbors_within</span><span class="p">(</span><span class="n">distance</span><span class="p">,</span><span class="n">points</span><span class="p">,</span> <span class="n">boundary_cond</span><span class="p">,</span> <span class="n">region</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Calculates, through cKDTree, a list of those pairs of particles that have a distance of less than &quot;distance&quot;.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="kn">import</span> <span class="nn">scipy.spatial</span> <span class="k">as</span> <span class="nn">spp</span>
+    <span class="k">if</span> <span class="nb">any</span><span class="p">([</span><span class="n">bc</span><span class="o">==</span><span class="s1">&#39;p&#39;</span> <span class="k">for</span> <span class="n">bc</span> <span class="ow">in</span> <span class="n">boundary_cond</span><span class="p">]):</span>
+                
+        <span class="c1"># padding a region prevents particles to be consider dimers </span>
+        <span class="c1"># when they are close to the boundary of a non periodic dimension</span>
+        <span class="n">pad_region</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span> <span class="k">if</span> <span class="n">bc</span><span class="o">==</span><span class="s1">&#39;p&#39;</span> <span class="k">else</span> <span class="n">distance</span><span class="o">*</span><span class="mi">2</span> <span class="k">for</span> <span class="n">bc</span> <span class="ow">in</span> <span class="n">boundary_cond</span><span class="p">]</span>
+
+        <span class="n">region</span><span class="p">[</span><span class="mi">0</span><span class="p">::</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">region</span><span class="p">[</span><span class="mi">0</span><span class="p">::</span><span class="mi">2</span><span class="p">]</span><span class="o">-</span><span class="n">pad_region</span>
+        <span class="n">region</span><span class="p">[</span><span class="mi">1</span><span class="p">::</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">region</span><span class="p">[</span><span class="mi">1</span><span class="p">::</span><span class="mi">2</span><span class="p">]</span><span class="o">+</span><span class="n">pad_region</span>
+        
+        <span class="n">tree</span> <span class="o">=</span> <span class="n">spp</span><span class="o">.</span><span class="n">cKDTree</span><span class="p">(</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">mod</span><span class="p">(</span>
+                <span class="p">(</span><span class="n">points</span><span class="o">-</span><span class="n">region</span><span class="p">[</span><span class="mi">0</span><span class="p">::</span><span class="mi">2</span><span class="p">]),</span> <span class="c1"># Centers</span>
+                <span class="n">region</span><span class="p">[</span><span class="mi">1</span><span class="p">::</span><span class="mi">2</span><span class="p">]</span><span class="o">-</span><span class="n">region</span><span class="p">[</span><span class="mi">0</span><span class="p">::</span><span class="mi">2</span><span class="p">]),</span> <span class="c1"># mod wraps particles outside the region</span>
+            <span class="n">boxsize</span> <span class="o">=</span> <span class="n">region</span><span class="p">[</span><span class="mi">1</span><span class="p">::</span><span class="mi">2</span><span class="p">]</span><span class="o">-</span><span class="n">region</span><span class="p">[</span><span class="mi">0</span><span class="p">::</span><span class="mi">2</span><span class="p">])</span> <span class="c1"># boxsize finds neighbors across the borders of a torus. </span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">tree</span> <span class="o">=</span> <span class="n">spp</span><span class="o">.</span><span class="n">cKDTree</span><span class="p">(</span><span class="n">points</span><span class="p">)</span> <span class="c1"># everything is easier for closed boundaries</span>
+
+    <span class="n">pair_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">tree</span><span class="o">.</span><span class="n">query_pairs</span><span class="p">(</span><span class="n">distance</span><span class="p">))</span>        
+    <span class="c1"># pair lists are really more useful as sets, which are not ordered. When comparing sets {a,b}=={b,a}.</span>
+    <span class="k">return</span>  <span class="p">[</span><span class="nb">set</span><span class="p">([</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">pair</span><span class="p">])</span> <span class="k">for</span> <span class="n">pair</span> <span class="ow">in</span> <span class="n">pair_list</span><span class="p">]</span>
+    
+<span class="k">def</span> <span class="nf">nearest_neighbors</span><span class="p">(</span><span class="n">points</span><span class="p">,</span><span class="n">boundary_cond</span><span class="p">,</span> <span class="n">region</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Calculates, through cKDTree, the nearest neighbors of each particle in a frame. </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="kn">import</span> <span class="nn">scipy.spatial</span> <span class="k">as</span> <span class="nn">spp</span>
+    <span class="k">if</span> <span class="nb">any</span><span class="p">([</span><span class="n">bc</span><span class="o">==</span><span class="s1">&#39;p&#39;</span> <span class="k">for</span> <span class="n">bc</span> <span class="ow">in</span> <span class="n">boundary_cond</span><span class="p">]):</span>
+        
+        <span class="c1"># padding a region prevents particles to be consider dimers </span>
+        <span class="c1"># when they are close to the boundary of a non periodic dimension</span>
+        <span class="n">pad_region</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span> <span class="k">if</span> <span class="n">bc</span><span class="o">==</span><span class="s1">&#39;p&#39;</span> <span class="k">else</span> <span class="n">distance</span><span class="o">*</span><span class="mi">2</span> <span class="k">for</span> <span class="n">bc</span> <span class="ow">in</span> <span class="n">boundary_cond</span><span class="p">]</span>
+        <span class="n">region</span><span class="p">[</span><span class="mi">0</span><span class="p">::</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">region</span><span class="p">[</span><span class="mi">0</span><span class="p">::</span><span class="mi">2</span><span class="p">]</span><span class="o">-</span><span class="n">pad_region</span>
+        <span class="n">region</span><span class="p">[</span><span class="mi">1</span><span class="p">::</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">region</span><span class="p">[</span><span class="mi">1</span><span class="p">::</span><span class="mi">2</span><span class="p">]</span><span class="o">+</span><span class="n">pad_region</span>
+        
+        <span class="n">tree</span> <span class="o">=</span> <span class="n">spp</span><span class="o">.</span><span class="n">cKDTree</span><span class="p">(</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">mod</span><span class="p">(</span>
+                <span class="p">(</span><span class="n">points</span><span class="o">-</span><span class="n">region</span><span class="p">[</span><span class="mi">0</span><span class="p">::</span><span class="mi">2</span><span class="p">]),</span> <span class="c1"># Centers</span>
+                <span class="n">region</span><span class="p">[</span><span class="mi">1</span><span class="p">::</span><span class="mi">2</span><span class="p">]</span><span class="o">-</span><span class="n">region</span><span class="p">[</span><span class="mi">0</span><span class="p">::</span><span class="mi">2</span><span class="p">]),</span> <span class="c1"># mod wraps particles outside the region</span>
+            <span class="n">boxsize</span> <span class="o">=</span> <span class="n">region</span><span class="p">[</span><span class="mi">1</span><span class="p">::</span><span class="mi">2</span><span class="p">]</span><span class="o">-</span><span class="n">region</span><span class="p">[</span><span class="mi">0</span><span class="p">::</span><span class="mi">2</span><span class="p">])</span> <span class="c1"># boxsize finds neighbors across the borders of a torus. </span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">tree</span> <span class="o">=</span> <span class="n">spp</span><span class="o">.</span><span class="n">cKDTree</span><span class="p">(</span><span class="n">points</span><span class="p">)</span> <span class="c1"># everything is easier for closed boundaries</span>
+
+    <span class="n">pair_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">tree</span><span class="o">.</span><span class="n">query</span><span class="p">())</span>        
+    <span class="c1"># pair lists are really more useful as sets, which are not ordered. When comparing sets {a,b}=={b,a}.</span>
+    <span class="k">return</span>  <span class="p">[</span><span class="nb">set</span><span class="p">([</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">pair</span><span class="p">])</span> <span class="k">for</span> <span class="n">pair</span> <span class="ow">in</span> <span class="n">pair_list</span><span class="p">]</span>
+    
+<span class="k">def</span> <span class="nf">dimers</span><span class="p">(</span><span class="n">trj</span><span class="p">,</span> <span class="n">sim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">boundary_cond</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">region</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">radius</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">distance</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; This returns a database of dimers in frames&quot;&quot;&quot;</span>
+    
+    <span class="k">if</span> <span class="n">sim</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">boundary_cond</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">world</span><span class="o">.</span><span class="n">boundaries</span>
+        <span class="n">region</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">r</span><span class="o">.</span><span class="n">magnitude</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">sim</span><span class="o">.</span><span class="n">world</span><span class="o">.</span><span class="n">region</span><span class="p">])</span> 
+        <span class="n">radius</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">radius</span><span class="o">.</span><span class="n">magnitude</span>
+        
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">distance</span><span class="p">:</span>
+        <span class="n">distance</span> <span class="o">=</span> <span class="mi">2</span><span class="o">*</span><span class="n">radius</span>
+        
+    <span class="n">idx</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">IndexSlice</span>
+    <span class="n">frames</span> <span class="o">=</span> <span class="n">trj</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">get_level_values</span><span class="p">(</span><span class="s1">&#39;frame&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span>
+    
+    <span class="n">pairs_in_frame</span> <span class="o">=</span> <span class="p">[]</span>
+    
+    <span class="k">for</span> <span class="n">i_frame</span><span class="p">,</span><span class="n">frame</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">frames</span><span class="p">):</span>
+        <span class="n">points</span> <span class="o">=</span> <span class="n">trj</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">idx</span><span class="p">[</span><span class="n">frame</span><span class="p">,:]]</span><span class="o">.</span><span class="n">filter</span><span class="p">((</span><span class="s2">&quot;x&quot;</span><span class="p">,</span><span class="s2">&quot;y&quot;</span><span class="p">,</span><span class="s2">&quot;z&quot;</span><span class="p">))</span><span class="o">.</span><span class="n">values</span>
+        <span class="n">p_id</span> <span class="o">=</span> <span class="n">trj</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">idx</span><span class="p">[</span><span class="n">frame</span><span class="p">,:]]</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">get_level_values</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">values</span>
+        
+        <span class="n">pair_list</span> <span class="o">=</span> <span class="n">neighbors_within</span><span class="p">(</span><span class="n">distance</span><span class="p">,</span><span class="n">points</span><span class="p">,</span> <span class="n">boundary_cond</span><span class="p">,</span> <span class="n">region</span><span class="p">)</span>
+        <span class="c1"># neighbors_within returns the location of the pair members. </span>
+        <span class="c1"># we need to convert that into the id of the pair members.</span>
+        <span class="n">pair_list</span> <span class="o">=</span> <span class="p">[{</span><span class="n">p_id</span><span class="p">[</span><span class="n">loc</span><span class="p">]</span> <span class="k">for</span> <span class="n">loc</span> <span class="ow">in</span> <span class="n">pair</span><span class="p">}</span> <span class="k">for</span> <span class="n">pair</span> <span class="ow">in</span> <span class="n">pair_list</span><span class="p">]</span>
+        
+        <span class="k">if</span> <span class="n">i_frame</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+            <span class="c1"># here I&#39;ll store the id&#39;s of dimers that I find. </span>
+            <span class="c1"># If the dimmer exists in the previous frame I must give it the same id. Otherwise I give it a new id. </span>
+            <span class="c1"># It&#39;s then straightforward to include this id in the DataFrame</span>
+            <span class="n">pairs_index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">pair_list</span><span class="p">))</span>
+
+            <span class="k">for</span> <span class="n">i_pair</span><span class="p">,</span><span class="n">pair</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">pair_list</span><span class="p">):</span>
+                <span class="c1"># Now, for each pair in the new frame</span>
+                
+                <span class="n">pairs_0_id</span> <span class="o">=</span> <span class="n">pairs_in_frame</span><span class="p">[</span><span class="n">i_frame</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">values</span>
+
+                <span class="c1"># &quot;where&quot; is the location of the pair in the previous array. </span>
+                <span class="c1"># If the pair is not in the previous array, it returns an empty, which is fine (see later)</span>
+                <span class="c1"># However, if the pair is in the previous array more than once it should fail.</span>
+                <span class="n">where</span> <span class="o">=</span> <span class="p">[</span><span class="n">pair_id</span> <span class="k">for</span> <span class="n">pair_id</span><span class="p">,</span> <span class="n">pair_0</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">pairs_in_frame</span><span class="p">[</span><span class="n">i_frame</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">)</span> <span class="k">if</span> <span class="n">pair_0</span> <span class="o">==</span> <span class="n">pair</span><span class="p">]</span>
+
+                <span class="k">if</span> <span class="n">where</span><span class="p">:</span>
+                    <span class="n">pairs_index</span><span class="p">[</span><span class="n">i_pair</span><span class="p">]</span> <span class="o">=</span> <span class="n">pairs_0_id</span><span class="p">[</span><span class="n">where</span><span class="p">]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="c1"># if where is empty, I assign a new id to the pair. I then update the newest pair id. </span>
+                    <span class="n">pairs_index</span><span class="p">[</span><span class="n">i_pair</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_pair_id</span>
+                    <span class="n">new_pair_id</span><span class="o">=</span><span class="n">new_pair_id</span><span class="o">+</span><span class="mi">1</span>
+            <span class="n">pair_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s1">&#39;members&#39;</span><span class="p">:</span><span class="n">pair_list</span><span class="p">},</span><span class="n">index</span> <span class="o">=</span> <span class="n">pairs_index</span><span class="p">)</span>
+            <span class="n">pair_df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;id&#39;</span>
+            <span class="n">pairs_in_frame</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pair_df</span><span class="p">)</span>
+
+        <span class="k">else</span><span class="p">:</span> 
+            <span class="n">pair_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s1">&#39;members&#39;</span><span class="p">:</span><span class="n">pair_list</span><span class="p">})</span>
+            <span class="n">pair_df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;id&#39;</span>
+            <span class="n">pairs_in_frame</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pair_df</span><span class="p">)</span>
+            <span class="n">new_pair_id</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">pair_list</span><span class="p">)</span>
+    
+    
+    <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span><span class="n">pairs_in_frame</span><span class="p">,</span><span class="n">keys</span> <span class="o">=</span> <span class="n">frames</span><span class="p">)</span><span class="o">.</span><span class="n">sort_index</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="s1">&#39;frame&#39;</span><span class="p">)</span>
+    
+<span class="k">def</span> <span class="nf">dimers_findpositions</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="n">trj</span><span class="p">,</span> <span class="n">sim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">boundary_cond</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">region</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">radius</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Finds the positions of both elements of each dimer and stores them in two new fields.</span>
+<span class="sd">    It also calculates the centers and directions of the dimers. </span>
+<span class="sd">    In periodic boundaries, this function needs to unwrap the direction vector of those </span>
+<span class="sd">    dimers that have one particle in each side of the boundary. </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">if</span> <span class="n">sim</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">boundary_cond</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">world</span><span class="o">.</span><span class="n">boundaries</span>
+        <span class="n">region</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">r</span><span class="o">.</span><span class="n">magnitude</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">sim</span><span class="o">.</span><span class="n">world</span><span class="o">.</span><span class="n">region</span><span class="p">])</span> 
+        <span class="n">radius</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">radius</span><span class="o">.</span><span class="n">magnitude</span>
+
+    <span class="n">p0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="n">dim</span><span class="p">),</span><span class="mi">3</span><span class="p">])</span>
+    <span class="n">p1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="n">dim</span><span class="p">),</span><span class="mi">3</span><span class="p">])</span>
+
+    <span class="n">members</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="nb">list</span><span class="p">(</span><span class="n">m</span><span class="p">)</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">dim</span><span class="o">.</span><span class="n">members</span><span class="o">.</span><span class="n">values</span><span class="p">])</span>
+    <span class="n">frames</span> <span class="o">=</span> <span class="n">dim</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">get_level_values</span><span class="p">(</span><span class="s1">&#39;frame&#39;</span><span class="p">)</span>
+
+    <span class="n">idx</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">IndexSlice</span>
+
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">m</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">members</span><span class="p">):</span>
+        <span class="n">m0</span> <span class="o">=</span> <span class="n">trj</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">idx</span><span class="p">[</span><span class="n">frames</span><span class="p">[</span><span class="n">i</span><span class="p">]]]</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">idx</span><span class="p">[</span><span class="n">m</span><span class="p">[</span><span class="mi">0</span><span class="p">]]]</span>
+        <span class="n">m1</span> <span class="o">=</span> <span class="n">trj</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">idx</span><span class="p">[</span><span class="n">frames</span><span class="p">[</span><span class="n">i</span><span class="p">]]]</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">idx</span><span class="p">[</span><span class="n">m</span><span class="p">[</span><span class="mi">1</span><span class="p">]]]</span>
+        
+        <span class="n">p</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">m0</span><span class="o">.</span><span class="n">filter</span><span class="p">((</span><span class="s2">&quot;x&quot;</span><span class="p">,</span><span class="s2">&quot;y&quot;</span><span class="p">,</span><span class="s2">&quot;z&quot;</span><span class="p">)),</span><span class="n">m1</span><span class="o">.</span><span class="n">filter</span><span class="p">((</span><span class="s2">&quot;x&quot;</span><span class="p">,</span><span class="s2">&quot;y&quot;</span><span class="p">,</span><span class="s2">&quot;z&quot;</span><span class="p">))])</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="n">p</span><span class="p">[</span><span class="n">p</span><span class="p">[:,</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">argsort</span><span class="p">()]</span>
+
+        <span class="n">p0</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">p1</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">p</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>    
+
+    <span class="n">center</span><span class="p">,</span> <span class="n">direction</span> <span class="o">=</span> <span class="n">unwrap_dimers</span><span class="p">(</span><span class="n">p0</span><span class="p">,</span><span class="n">p1</span><span class="p">,</span><span class="n">region</span><span class="p">,</span><span class="n">boundary_cond</span><span class="p">)</span>
+    
+    <span class="n">dim</span><span class="p">[</span><span class="s1">&#39;part0&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">p0</span><span class="p">)</span>
+    <span class="n">dim</span><span class="p">[</span><span class="s1">&#39;part1&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">p1</span><span class="p">)</span>
+    <span class="n">dim</span><span class="p">[</span><span class="s1">&#39;center&#39;</span><span class="p">]</span><span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">center</span><span class="p">)</span>
+    <span class="n">dim</span><span class="p">[</span><span class="s1">&#39;direction&#39;</span><span class="p">]</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">direction</span><span class="p">)</span>
+    
+    <span class="k">return</span> <span class="n">dim</span>
+    
+<span class="k">def</span> <span class="nf">unwrap_dimers</span><span class="p">(</span><span class="n">p0</span><span class="p">,</span><span class="n">p1</span><span class="p">,</span><span class="n">region</span><span class="p">,</span><span class="n">boundary_cond</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">tol</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">    Unwraps the dimers that are found across the periodic boundaries periodic boundaries of the region</span>
+<span class="sd">    The input p0 and p1 are arrays of Nx3, where N is the number of dimers. Each row of p0 is the position in 3D of the first particle (convention is that this is the lower particle)</span>
+<span class="sd">    Each row of p1 is the position of the second particle.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="n">size</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">region</span><span class="p">)[</span><span class="mi">1</span><span class="p">::</span><span class="mi">2</span><span class="p">]</span> <span class="o">-</span> \
+            <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">region</span><span class="p">)[</span><span class="mi">0</span><span class="p">::</span><span class="mi">2</span><span class="p">]</span>
+        
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">tol</span><span class="p">:</span>
+        <span class="n">tol</span> <span class="o">=</span> <span class="n">size</span><span class="o">/</span><span class="mi">2</span>
+    <span class="k">elif</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">tol</span><span class="p">,</span> <span class="s2">&quot;__len__&quot;</span><span class="p">):</span>
+        <span class="n">tol</span> <span class="o">=</span> <span class="n">tol</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+    
+    <span class="n">tol</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+        <span class="p">[</span><span class="n">t</span> <span class="k">if</span> <span class="p">(</span><span class="n">b</span><span class="o">==</span><span class="s1">&#39;p&#39;</span><span class="p">)</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">Inf</span>  <span class="k">for</span> <span class="n">b</span><span class="p">,</span><span class="n">t</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">boundary_cond</span><span class="p">,</span><span class="n">tol</span><span class="p">)])</span>
+    
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    We stack in 3D both position arrays. This allows us to calculate the direction as a diff.</span>
+<span class="sd">    In this array then, each element represents a dimer. Each dimer has three arrays which represent the three dimensions, and each of these arrays contains 2 elements, one for each dimer-member.</span>
+<span class="sd">    That is: the first dimension is the dimers. The second dimension is the three elements of the positions, and the third dimension are the two members of the dimer. The array is therefore Nx3x2</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">point_pairs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">p0</span><span class="p">,</span><span class="n">p1</span><span class="p">],</span><span class="mi">2</span><span class="p">)</span>
+    <span class="sd">&quot;&quot;&quot;Calculate the diferences of each component of every dimer&quot;&quot;&quot;</span>
+    <span class="n">delta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">point_pairs</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+    
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    We unwrap only those dimers that have a dimension greater than a tolerance. The tolerance is, by default half the size of the region in the respective direction</span>
+<span class="sd">    To unwrap a value, we add to it&#39;s second point, the size of the region in its direction multiplied by the sign of the direction. </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">needs_unwrap</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">delta</span><span class="p">)</span><span class="o">&gt;</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">tol</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">unwrap_amount</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">delta</span><span class="p">)</span><span class="o">*</span><span class="n">size</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+    
+    <span class="n">second_points</span> <span class="o">=</span> <span class="n">point_pairs</span><span class="p">[:,:,</span><span class="mi">1</span><span class="p">:</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+    <span class="n">second_points</span><span class="p">[</span><span class="n">needs_unwrap</span><span class="o">.</span><span class="n">flatten</span><span class="p">()]</span> <span class="o">-=</span> <span class="n">unwrap_amount</span><span class="p">[</span><span class="n">needs_unwrap</span><span class="p">]</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+
+    <span class="n">point_pairs</span><span class="p">[:,:,</span><span class="mi">1</span><span class="p">]</span><span class="o">=</span><span class="n">second_points</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">point_pairs</span><span class="p">[:,:,</span><span class="mi">1</span><span class="p">]))</span>
+    
+    <span class="n">direction</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">point_pairs</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">)[:,:,</span><span class="mi">0</span><span class="p">]</span>
+    
+    <span class="sd">&quot;&quot;&quot;We calculate like this the center, because the usual formula (p0+p1)/2 would yield something in the center of the region for vectors that were unwraped.&quot;&quot;&quot;</span>
+    <span class="n">center</span> <span class="o">=</span> <span class="n">p0</span><span class="o">+</span><span class="n">direction</span><span class="o">/</span><span class="mi">2</span>
+    
+    <span class="k">return</span> <span class="n">center</span><span class="p">,</span> <span class="n">direction</span>
+    
+<span class="k">def</span> <span class="nf">draw_dim</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span><span class="n">sim</span><span class="p">,</span><span class="n">iframe</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span><span class="n">ax</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">    displays a trajectory statically. </span>
+<span class="sd">    If iframe is given, it displays particles in the frame specified by the index iframe. </span>
+<span class="sd">    If it isn&#39;t given, then it displays the last frame</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+        
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">ax</span><span class="p">:</span>
+        <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">7</span><span class="p">,</span><span class="mi">7</span><span class="p">))</span>
+    
+    <span class="n">idx</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">IndexSlice</span>
+    
+    <span class="n">frames</span> <span class="o">=</span> <span class="n">dim</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">get_level_values</span><span class="p">(</span><span class="s1">&#39;frame&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span>
+    <span class="n">dimers</span> <span class="o">=</span> <span class="n">dim</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">idx</span><span class="p">[</span><span class="n">frames</span><span class="p">[</span><span class="n">iframe</span><span class="p">],:]]</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">get_level_values</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span>
+    <span class="n">n_of_dimers</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">dimers</span><span class="p">)</span>
+    
+    <span class="n">region</span> <span class="o">=</span> <span class="p">[</span><span class="n">r</span><span class="o">.</span><span class="n">magnitude</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">sim</span><span class="o">.</span><span class="n">world</span><span class="o">.</span><span class="n">region</span><span class="p">]</span>
+        
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="n">region</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">region</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="n">region</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="n">region</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">aspect</span><span class="o">=</span><span class="s1">&#39;equal&#39;</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;$x [\mu</span><span class="si">{m}</span><span class="s2">]$&quot;</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;$y [\mu</span><span class="si">{m}</span><span class="s2">]$&quot;</span><span class="p">)</span>
+    
+    <span class="n">patches</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">d</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">dimers</span><span class="p">):</span>
+        <span class="n">center</span> <span class="o">=</span> <span class="n">dim</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">idx</span><span class="p">[</span><span class="n">frames</span><span class="p">[</span><span class="n">iframe</span><span class="p">],</span><span class="n">d</span><span class="p">],</span><span class="s1">&#39;center&#39;</span><span class="p">]</span>
+        <span class="n">direction</span> <span class="o">=</span> <span class="n">dim</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">idx</span><span class="p">[</span><span class="n">frames</span><span class="p">[</span><span class="n">iframe</span><span class="p">],</span><span class="n">d</span><span class="p">],</span><span class="s1">&#39;direction&#39;</span><span class="p">]</span>
+        <span class="n">p0</span> <span class="o">=</span> <span class="n">center</span><span class="o">-</span><span class="n">direction</span><span class="o">/</span><span class="mi">2</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">Arrow</span><span class="p">(</span><span class="n">p0</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">p0</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">direction</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">direction</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">patches</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
+
+    <span class="n">p</span> <span class="o">=</span> <span class="n">clt</span><span class="o">.</span><span class="n">PatchCollection</span><span class="p">(</span><span class="n">patches</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">add_collection</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+            
+    <span class="k">return</span> <span class="n">ax</span>
+    
+<span class="k">def</span> <span class="nf">animate_dim</span><span class="p">(</span><span class="n">dim</span> <span class="p">,</span><span class="n">sim</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">verb</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">step</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">speedup</span> <span class="o">=</span> <span class="mi">1</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This function animates the dimers resulting from a confined dimer simulation.</span>
+<span class="sd">    It displays each dimer as a vector that runs from the lower to the higher particles. </span>
+<span class="sd">    The simulation is required as argument to obtain parameters like the region size and the </span>
+<span class="sd">    particles radius. </span>
+<span class="sd">    Optional parameters are:</span>
+<span class="sd">    * ax: an axis object to use for creating the plot.</span>
+<span class="sd">    * start: start time of the simulation if not the whole time is required. The default is 0. </span>
+<span class="sd">    * end: end time of the simulation. The default is the total simulation time.</span>
+<span class="sd">    * step = 1. The framerate, so to speak. </span>
+<span class="sd">    * verb = False. If verb = True, the routine prints indicators that is running. </span>
+<span class="sd">    * speedup allows us to do faster videos. Default is 1, which means normal ratio.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span> <span class="nn">mpl_toolkits.axes_grid1</span> <span class="kn">import</span> <span class="n">make_axes_locatable</span>
+    
+    <span class="n">idx</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">IndexSlice</span>
+    
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">ax</span><span class="p">:</span>
+        <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">7</span><span class="p">,</span><span class="mi">7</span><span class="p">))</span>
+
+    <span class="n">dimers</span> <span class="o">=</span> <span class="n">dim</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">get_level_values</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span>
+    <span class="n">n_of_dimers</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">dim</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">get_level_values</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">unique</span><span class="p">())</span>
+    
+    <span class="n">region</span> <span class="o">=</span> <span class="p">[</span><span class="n">r</span><span class="o">.</span><span class="n">magnitude</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">sim</span><span class="o">.</span><span class="n">world</span><span class="o">.</span><span class="n">region</span><span class="p">]</span>
+    <span class="n">radius</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">particles</span><span class="o">.</span><span class="n">radius</span><span class="o">.</span><span class="n">magnitude</span>
+        
+    <span class="n">framerate</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">framerate</span><span class="o">.</span><span class="n">magnitude</span>
+    <span class="n">runtime</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">total_time</span><span class="o">.</span><span class="n">magnitude</span>
+    <span class="n">timestep</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">timestep</span><span class="o">.</span><span class="n">magnitude</span>
+    
+    <span class="n">lammps_time</span> <span class="o">=</span> <span class="mf">1e6</span><span class="p">;</span>
+    
+    <span class="c1">#dt_data = np.round(1/(timestep*framerate)) # Data timestep in lammps_time</span>
+    
+    <span class="n">frames</span> <span class="o">=</span> <span class="n">dim</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">get_level_values</span><span class="p">(</span><span class="s1">&#39;frame&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span><span class="o">.</span><span class="n">values</span>
+    
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">frames</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;There are no dimers in the input array&quot;</span><span class="p">)</span>
+        
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">end</span><span class="p">:</span>
+        <span class="n">end</span> <span class="o">=</span> <span class="n">frames</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="n">timestep</span>
+    
+    <span class="n">frame_min</span><span class="o">=</span><span class="n">start</span><span class="o">/</span><span class="n">timestep</span>
+    <span class="n">frame_max</span><span class="o">=</span><span class="n">end</span><span class="o">/</span><span class="n">timestep</span>
+    
+    <span class="n">frame_id_min</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">frames</span><span class="o">&gt;=</span><span class="n">frame_min</span><span class="p">)[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">frame_id_max</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">frames</span><span class="o">&lt;</span><span class="n">frame_max</span><span class="p">)[</span><span class="mi">0</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    
+    <span class="n">dim</span> <span class="o">=</span> <span class="n">dim</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">idx</span><span class="p">[</span><span class="n">frames</span><span class="p">[</span><span class="n">frame_id_min</span><span class="p">:</span><span class="n">frame_id_max</span><span class="p">:</span><span class="n">step</span><span class="p">],:]]</span>
+
+    <span class="n">dimers</span> <span class="o">=</span> <span class="n">dim</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">get_level_values</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span>
+    <span class="n">n_of_dimers</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">dim</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">get_level_values</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">unique</span><span class="p">())</span>
+
+    <span class="n">frames</span> <span class="o">=</span> <span class="n">dim</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">get_level_values</span><span class="p">(</span><span class="s1">&#39;frame&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span><span class="o">.</span><span class="n">values</span>
+    <span class="n">dt_video</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">frames</span><span class="p">))</span><span class="o">*</span><span class="n">sim</span><span class="o">.</span><span class="n">timestep</span><span class="o">.</span><span class="n">magnitude</span><span class="o">*</span><span class="mi">1000</span><span class="o">/</span><span class="n">speedup</span> <span class="c1"># video timestep in miliseconds</span>
+    
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="n">region</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">region</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="n">region</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="n">region</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">aspect</span><span class="o">=</span><span class="s1">&#39;equal&#39;</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;$x [\mu</span><span class="si">{m}</span><span class="s2">]$&quot;</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;$y [\mu</span><span class="si">{m}</span><span class="s2">]$&quot;</span><span class="p">)</span>
+    
+    <span class="n">patches</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">p</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">dimers</span><span class="p">):</span>
+        <span class="n">a</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">Arrow</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">patches</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
+
+    <span class="n">p</span> <span class="o">=</span> <span class="n">clt</span><span class="o">.</span><span class="n">PatchCollection</span><span class="p">(</span><span class="n">patches</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">init</span><span class="p">():</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">add_collection</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">p</span><span class="p">,</span>
+
+    <span class="k">def</span> <span class="nf">animate</span><span class="p">(</span><span class="n">frame</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">verb</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;frame[</span><span class="si">%u</span><span class="s2">] is &quot;</span><span class="o">%</span><span class="n">frame</span><span class="p">,</span><span class="n">frames</span><span class="p">[</span><span class="n">frame</span><span class="p">])</span>
+        
+        <span class="n">patches</span> <span class="o">=</span> <span class="p">[]</span>
+        
+        <span class="n">dimers</span> <span class="o">=</span> <span class="n">dim</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">idx</span><span class="p">[</span><span class="n">frames</span><span class="p">[</span><span class="n">frame</span><span class="p">],:]]</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">get_level_values</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span>
+        <span class="n">n_of_dimers</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">dimers</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="p">(</span><span class="n">dim_id</span><span class="p">,</span><span class="n">dimer</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">dimers</span><span class="p">):</span>
+
+            <span class="n">center</span> <span class="o">=</span> <span class="n">dim</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">idx</span><span class="p">[</span><span class="n">frames</span><span class="p">[</span><span class="n">frame</span><span class="p">],</span><span class="n">dimer</span><span class="p">],</span><span class="s1">&#39;center&#39;</span><span class="p">]</span>
+            <span class="n">direction</span> <span class="o">=</span> <span class="n">dim</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">idx</span><span class="p">[</span><span class="n">frames</span><span class="p">[</span><span class="n">frame</span><span class="p">],</span><span class="n">dimer</span><span class="p">],</span><span class="s1">&#39;direction&#39;</span><span class="p">]</span>
+            <span class="n">p0</span> <span class="o">=</span> <span class="n">center</span><span class="o">-</span><span class="n">direction</span><span class="o">/</span><span class="mi">2</span>
+            <span class="n">a</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">Arrow</span><span class="p">(</span><span class="n">p0</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">p0</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">direction</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">direction</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+            <span class="n">patches</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
+            
+        <span class="n">p</span><span class="o">.</span><span class="n">set_paths</span><span class="p">(</span><span class="n">patches</span><span class="p">)</span>
+
+        <span class="n">ax</span><span class="o">.</span><span class="n">add_collection</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">p</span><span class="p">,</span>
+    
+    <span class="k">if</span> <span class="n">verb</span><span class="p">:</span> 
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;started animating&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">frames</span><span class="p">)</span>
+        
+    <span class="n">anim</span> <span class="o">=</span> <span class="n">anm</span><span class="o">.</span><span class="n">FuncAnimation</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="n">animate</span><span class="p">,</span> <span class="n">init_func</span><span class="o">=</span><span class="n">init</span><span class="p">,</span>
+                                   <span class="n">frames</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">frames</span><span class="p">),</span> <span class="n">interval</span><span class="o">=</span><span class="n">dt_video</span><span class="p">,</span> <span class="n">blit</span><span class="o">=</span><span class="kc">True</span><span class="p">);</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">anim</span><span class="o">.</span><span class="n">_fig</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">anim</span>
+    
+<span class="k">def</span> <span class="nf">dimers_array</span><span class="p">(</span><span class="n">dim</span><span class="p">):</span>
+    <span class="n">dim</span><span class="p">[</span><span class="s2">&quot;member_a&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="nb">list</span><span class="p">(</span><span class="n">m</span><span class="p">)</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">dim</span><span class="o">.</span><span class="n">members</span><span class="p">])[:,</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">dim</span><span class="p">[</span><span class="s2">&quot;member_b&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="nb">list</span><span class="p">(</span><span class="n">m</span><span class="p">)</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">dim</span><span class="o">.</span><span class="n">members</span><span class="p">])[:,</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="n">dim</span><span class="p">[</span><span class="s2">&quot;x&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">m</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">dim</span><span class="o">.</span><span class="n">center</span><span class="p">])[:,</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">dim</span><span class="p">[</span><span class="s2">&quot;y&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">m</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">dim</span><span class="o">.</span><span class="n">center</span><span class="p">])[:,</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">dim</span><span class="p">[</span><span class="s2">&quot;z&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">m</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">dim</span><span class="o">.</span><span class="n">center</span><span class="p">])[:,</span><span class="mi">2</span><span class="p">]</span>
+
+    <span class="n">dim</span><span class="p">[</span><span class="s2">&quot;dx&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">m</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">dim</span><span class="o">.</span><span class="n">direction</span><span class="p">])[:,</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">dim</span><span class="p">[</span><span class="s2">&quot;dy&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">m</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">dim</span><span class="o">.</span><span class="n">direction</span><span class="p">])[:,</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">dim</span><span class="p">[</span><span class="s2">&quot;dz&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">m</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">dim</span><span class="o">.</span><span class="n">direction</span><span class="p">])[:,</span><span class="mi">2</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">dim</span><span class="o">.</span><span class="n">filter</span><span class="p">([</span><span class="s2">&quot;member_a&quot;</span><span class="p">,</span><span class="s2">&quot;member_b&quot;</span><span class="p">,</span><span class="s2">&quot;x&quot;</span><span class="p">,</span><span class="s2">&quot;y&quot;</span><span class="p">,</span><span class="s2">&quot;z&quot;</span><span class="p">,</span><span class="s2">&quot;dx&quot;</span><span class="p">,</span><span class="s2">&quot;dy&quot;</span><span class="p">,</span><span class="s2">&quot;dz&quot;</span><span class="p">])</span>
+
+<span class="k">def</span> <span class="nf">save_dimer_array</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span><span class="n">filename</span><span class="p">,</span><span class="n">directory</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Converts dimers to a saveable array&quot;&quot;&quot;</span>
+    <span class="kn">import</span> <span class="nn">os</span>
+
+    <span class="n">dim_store</span> <span class="o">=</span> <span class="n">dimers_to_array</span><span class="p">(</span><span class="n">dim</span><span class="p">)</span>
+    
+    <span class="n">dim_store</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">directory</span><span class="p">,</span><span class="n">filename</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot;_dimers.dat&quot;</span><span class="p">,</span><span class="n">sep</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span><span class="p">)</span>
+    
+    <span class="k">return</span> <span class="n">dim_store</span>
+    
+<span class="c1">### Order Paramters</span>
+
+<span class="k">def</span> <span class="nf">nematic_order</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span><span class="n">director</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">    Calculates the nematic order parameter $S = &lt;1/2*(3cos(theta)^2-1)&gt;$, where $theta$ is the angle between the director vector and the dimers. If the director is not given, the function returns the order parameter and the director with the largest order with a resolution of one degree. </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">director</span><span class="p">:</span>
+        <span class="n">direction</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">dim</span><span class="o">.</span><span class="n">direction</span><span class="o">.</span><span class="n">values</span><span class="p">))</span>
+        <span class="n">theta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arctan2</span><span class="p">(</span><span class="n">direction</span><span class="p">[:,</span><span class="mi">1</span><span class="p">],</span><span class="n">direction</span><span class="p">[:,</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">theta_0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arctan2</span><span class="p">(</span><span class="n">director</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">director</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">((</span><span class="mi">3</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">theta</span><span class="o">-</span><span class="n">theta_0</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">theta_0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span><span class="mi">360</span><span class="p">)</span>
+
+        <span class="n">S</span> <span class="o">=</span> <span class="p">[</span><span class="n">nematic_order</span><span class="p">(</span><span class="n">dim</span><span class="p">,[</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">th</span><span class="p">),</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">th</span><span class="p">)])</span> <span class="k">for</span> <span class="n">th</span> <span class="ow">in</span> <span class="n">theta_0</span><span class="p">]</span>
+        
+        <span class="n">max_order</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">S</span><span class="p">)</span>
+        <span class="n">director</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">theta_0</span><span class="p">[</span><span class="n">max_order</span><span class="p">]),</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta_0</span><span class="p">[</span><span class="n">max_order</span><span class="p">])]</span>
+        <span class="k">return</span> <span class="n">S</span><span class="p">[</span><span class="n">max_order</span><span class="p">],</span> <span class="n">director</span>
+        
+<span class="k">def</span> <span class="nf">load_trj</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="n">slc</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">output</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;x&quot;</span><span class="p">,</span><span class="s2">&quot;y&quot;</span><span class="p">,</span><span class="s2">&quot;z&quot;</span><span class="p">]):</span>
+    <span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">simulation</span> <span class="k">as</span> <span class="n">sim</span>
+    
+    <span class="k">if</span> <span class="n">slc</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">slc</span> <span class="o">=</span> <span class="nb">slice</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+        
+    <span class="n">lz_trj</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">trj_lazyread</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">output</span><span class="p">)</span>
+    <span class="n">trj</span> <span class="o">=</span> <span class="n">lz_trj</span><span class="p">[</span><span class="n">slc</span><span class="p">]</span><span class="o">.</span><span class="n">filter</span><span class="p">([</span><span class="s2">&quot;type&quot;</span><span class="p">,</span><span class="s2">&quot;x&quot;</span><span class="p">,</span><span class="s2">&quot;y&quot;</span><span class="p">,</span><span class="s2">&quot;z&quot;</span><span class="p">])</span>
+        
+    <span class="n">bounds</span> <span class="o">=</span> <span class="n">lz_trj</span><span class="o">.</span><span class="n">get_bounds</span><span class="p">()</span>
+        
+    <span class="k">return</span> <span class="n">trj</span><span class="p">,</span> <span class="n">bounds</span>
+
+<span class="k">def</span> <span class="nf">unwrap_trj</span><span class="p">(</span><span class="n">trj</span><span class="p">,</span><span class="n">bounds</span><span class="p">):</span>
+    
+    <span class="n">trj2</span> <span class="o">=</span> <span class="n">trj</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">deep</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">unwrap</span><span class="p">(</span><span class="n">p</span><span class="p">):</span>
+        <span class="n">p</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unwrap</span><span class="p">(</span><span class="n">p</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">p</span>
+
+    <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">trj</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+        <span class="n">trj2</span><span class="p">[</span><span class="n">c</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">trj2</span><span class="p">[</span><span class="n">c</span><span class="p">]</span> <span class="o">-</span> <span class="n">bounds</span><span class="p">[</span><span class="n">c</span><span class="o">+</span><span class="s2">&quot;_min&quot;</span><span class="p">])</span><span class="o">/</span><span class="p">(</span><span class="n">bounds</span><span class="p">[</span><span class="n">c</span><span class="o">+</span><span class="s2">&quot;_max&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="n">bounds</span><span class="p">[</span><span class="n">c</span><span class="o">+</span><span class="s2">&quot;_min&quot;</span><span class="p">])</span>
+
+    <span class="n">trj2</span> <span class="o">=</span> <span class="p">(</span><span class="n">trj2</span><span class="o">*</span><span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s2">&quot;id&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">unwrap</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">trj</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+        <span class="n">trj2</span><span class="p">[</span><span class="n">c</span><span class="p">]</span> <span class="o">=</span> <span class="n">trj2</span><span class="p">[</span><span class="n">c</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="n">bounds</span><span class="p">[</span><span class="n">c</span><span class="o">+</span><span class="s2">&quot;_max&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="n">bounds</span><span class="p">[</span><span class="n">c</span><span class="o">+</span><span class="s2">&quot;_min&quot;</span><span class="p">])</span> <span class="o">+</span> <span class="n">bounds</span><span class="p">[</span><span class="n">c</span><span class="o">+</span><span class="s2">&quot;_min&quot;</span><span class="p">]</span>
+        
+    <span class="k">return</span> <span class="n">trj2</span>
+
+<span class="k">def</span> <span class="nf">calculate_msd</span><span class="p">(</span><span class="n">series</span><span class="p">,</span><span class="n">lag_frame</span><span class="p">,</span><span class="n">col_name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">framerate</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">particle_id</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+    
+    <span class="k">if</span> <span class="n">col_name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">col_name</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">values</span>
+        
+    <span class="k">def</span> <span class="nf">msd_point</span><span class="p">(</span><span class="n">lag</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmean</span><span class="p">((</span><span class="n">series</span><span class="p">[</span><span class="n">col_name</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="n">lag</span><span class="p">:]</span><span class="o">-</span><span class="n">series</span><span class="p">[</span><span class="n">col_name</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">[:</span><span class="o">-</span><span class="n">lag</span><span class="p">])</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    
+    <span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;msd_&quot;</span><span class="o">+</span><span class="n">name</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">col_name</span><span class="p">]</span>
+    
+    <span class="n">result</span> <span class="o">=</span>  <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+        <span class="n">data</span><span class="o">=</span><span class="p">[</span><span class="n">msd_point</span><span class="p">(</span><span class="n">lag</span><span class="p">)</span> <span class="k">for</span> <span class="n">lag</span> <span class="ow">in</span> <span class="n">lag_frame</span><span class="p">],</span>
+        <span class="n">index</span><span class="o">=</span><span class="n">lag_frame</span><span class="o">/</span><span class="n">framerate</span><span class="p">,</span><span class="n">columns</span><span class="o">=</span><span class="n">columns</span><span class="p">)</span>
+    
+    <span class="n">result</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;dt&quot;</span>
+
+    <span class="k">if</span> <span class="n">particle_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">result</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">particle_id</span>
+        <span class="n">result</span><span class="p">[</span><span class="s2">&quot;dt&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">values</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">set_index</span><span class="p">([</span><span class="s2">&quot;dt&quot;</span><span class="p">,</span><span class="s2">&quot;id&quot;</span><span class="p">])</span>
+    
+    <span class="k">return</span> <span class="n">result</span>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">magcolloids</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started.html#walkthrough">Walkthrough</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api.html">API</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, Antonio Ortiz-Ambriz.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.0.3</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
