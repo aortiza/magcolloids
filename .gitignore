@@ -1,4 +1,5 @@
 magcolloids/__pycache__/*
 magcolloids/lammps_executables/log.lammps
+docs/source/.ipynb_checkpoints/*
 *.DS_Store
 *log.lammps
