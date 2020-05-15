@@ -17,7 +17,7 @@
     <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="prev" title="Creating Circle Traps using external forces." href="CircleTrapsScript.html" />
+    <link rel="prev" title="Bidisperse simulations" href="BidisperseSimulations.html" />
    
   <link rel="stylesheet" href="_static/custom.css" type="text/css" />
   
@@ -56,7 +56,9 @@ Optional parameters are:
 * end: end time of the simulation. The default is the total simulation time.
 * step = 1. The framerate, so to speak. 
 * verb = False. If verb = True, the routine prints indicators that is running. 
-* speedup allows us to do faster videos. Default is 1, which means normal ratio.</p>
+* speedup allows us to do faster videos. Default is 1, which means normal ratio.
+todo:
+Fix for bidisperse particles. Take draw_trj as example.</p>
 </dd></dl>
 
 </div>
@@ -70,7 +72,7 @@ Optional parameters are:
 
 <dl class="py class">
 <dt id="magcolloids.field">
-<em class="property">class </em><code class="sig-prename descclassname">magcolloids.</code><code class="sig-name descname">field</code><span class="sig-paren">(</span><em class="sig-param">magnitude=&lt;Quantity(10</em>, <em class="sig-param">'millitesla')&gt;</em>, <em class="sig-param">frequency=&lt;Quantity(0</em>, <em class="sig-param">'hertz')&gt;</em>, <em class="sig-param">angle=&lt;Quantity(0</em>, <em class="sig-param">'degree')&gt;</em>, <em class="sig-param">fieldx=None</em>, <em class="sig-param">fieldy=None</em>, <em class="sig-param">fieldz=None</em>, <em class="sig-param">multibody_iter=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/magcolloids/parameters.html#field"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#magcolloids.field" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">magcolloids.</code><code class="sig-name descname">field</code><span class="sig-paren">(</span><em class="sig-param">magnitude=&lt;Quantity(10</em>, <em class="sig-param">'millitesla')&gt;</em>, <em class="sig-param">frequency=&lt;Quantity(0</em>, <em class="sig-param">'hertz')&gt;</em>, <em class="sig-param">angle=&lt;Quantity(0</em>, <em class="sig-param">'degree')&gt;</em>, <em class="sig-param">phase=&lt;Quantity(0</em>, <em class="sig-param">'degree')&gt;</em>, <em class="sig-param">fieldx=None</em>, <em class="sig-param">fieldy=None</em>, <em class="sig-param">fieldz=None</em>, <em class="sig-param">multibody_iter=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/magcolloids/parameters.html#field"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#magcolloids.field" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py class">
@@ -151,7 +153,7 @@ It accepts some options, which for now include:
 <h3>Related Topics</h3>
 <ul>
   <li><a href="index.html">Documentation overview</a><ul>
-      <li>Previous: <a href="CircleTrapsScript.html" title="previous chapter">Creating Circle Traps using external forces.</a></li>
+      <li>Previous: <a href="BidisperseSimulations.html" title="previous chapter">Bidisperse simulations</a></li>
   </ul></li>
 </ul>
 </div>

@@ -10,7 +10,10 @@ Walkthrough
    :caption: The following is an example notebook:
    
    Walkthrough
-   
-   ParallelSimulation
-   
+      
    CircleTrapsScript
+   
+   BidisperseSimulations
+
+to do: 
+There is nothing explaining how regular traps work

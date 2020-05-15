@@ -44,23 +44,35 @@
 <span class="kn">import</span> <span class="nn">copy</span> <span class="k">as</span> <span class="nn">cp</span>
 <span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">ureg</span>
 
-
+ 
 <div class="viewcode-block" id="sim"><a class="viewcode-back" href="../../api.html#magcolloids.sim">[docs]</a><span class="k">class</span> <span class="nc">sim</span><span class="p">():</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
         <span class="n">file_name</span> <span class="o">=</span> <span class="s2">&quot;test&quot;</span><span class="p">,</span> <span class="n">dir_name</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span><span class="n">stamp_time</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">particles</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">traps</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">world</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">field</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">timestep</span> <span class="o">=</span> <span class="mf">1e-3</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">s</span><span class="p">,</span> <span class="n">framerate</span> <span class="o">=</span> <span class="mi">30</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">Hz</span><span class="p">,</span> <span class="n">total_time</span> <span class="o">=</span> <span class="mi">60</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">s</span><span class="p">,</span>
         <span class="n">output</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;x&quot;</span><span class="p">,</span> <span class="s2">&quot;y&quot;</span><span class="p">,</span> <span class="s2">&quot;z&quot;</span><span class="p">],</span> <span class="n">processors</span> <span class="o">=</span> <span class="mi">1</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot; </span>
+        <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        A sim object contains the parameters defined before. It also requires some extra parameters that define the files in which the simulation scripts and results are stored &quot;&quot;&quot;</span>
-        
-        
+                
         <span class="bp">self</span><span class="o">.</span><span class="n">file_name</span> <span class="o">=</span> <span class="n">file_name</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">dir_name</span> <span class="o">=</span> <span class="n">dir_name</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">stamp_time</span> <span class="o">=</span> <span class="n">stamp_time</span>
         
         <span class="bp">self</span><span class="o">.</span><span class="n">particles</span> <span class="o">=</span> <span class="n">particles</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">traps</span> <span class="o">=</span> <span class="n">traps</span>
+        
+        <span class="k">if</span> <span class="n">particles</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;particles&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">particles</span><span class="o">=</span><span class="p">[</span><span class="n">particles</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">particles</span><span class="o">=</span><span class="n">particles</span>
+        
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">traps</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">particles</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;bistable_trap&quot;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">traps</span><span class="o">=</span><span class="p">[</span><span class="n">traps</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">traps</span><span class="o">=</span><span class="n">traps</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">traps</span> <span class="o">=</span> <span class="n">traps</span>
+        
         <span class="bp">self</span><span class="o">.</span><span class="n">world</span> <span class="o">=</span> <span class="n">world</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">field</span> <span class="o">=</span> <span class="n">field</span>
         
@@ -70,7 +82,147 @@
         
         <span class="bp">self</span><span class="o">.</span><span class="n">output</span> <span class="o">=</span> <span class="n">output</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">processors</span> <span class="o">=</span> <span class="n">processors</span>
+    
+    <span class="k">def</span> <span class="nf">write_script</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Write the lmpin file&quot;&quot;&quot;</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">script_name</span><span class="p">,</span><span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;### ---preamble--- ###</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;log </span><span class="si">%s</span><span class="s2">&quot;</span><span class="o">%</span><span class="bp">self</span><span class="o">.</span><span class="n">log_name</span><span class="p">)</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">world</span><span class="o">.</span><span class="n">world_def</span><span class="p">)</span>
 
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">### ---Create Particles and Region--- ###</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;read_data &quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">input_name</span><span class="p">)</span>
+                
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">world</span><span class="o">.</span><span class="n">group_def</span><span class="p">)</span>
+
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">### ---Variables--- ###</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span> 
+   
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">## magnetic field</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span> 
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">variable_def</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">traps</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">any</span><span class="p">([</span><span class="n">t</span><span class="o">.</span><span class="n">velocity</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">traps</span><span class="p">]):</span>
+                    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">## traps velocities</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span> 
+                    <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">traps</span><span class="p">:</span>
+                        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">velocity</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">world</span><span class="o">.</span><span class="n">ext_force</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">## external force</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span> 
+    
+                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">world</span><span class="o">.</span><span class="n">ext_force</span><span class="o">.</span><span class="n">calculation</span><span class="p">)</span>
+    
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">### ---Fixes--- ###</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span> 
+
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">fix_def</span><span class="p">)</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">world</span><span class="o">.</span><span class="n">integrator_def</span><span class="p">)</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">world</span><span class="o">.</span><span class="n">gravity_def</span><span class="p">)</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">world</span><span class="o">.</span><span class="n">wall_def</span><span class="p">)</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">world</span><span class="o">.</span><span class="n">enforce2d</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">traps</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">traps</span><span class="p">:</span>
+                    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">velocity_fix</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">world</span><span class="o">.</span><span class="n">ext_force</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">world</span><span class="o">.</span><span class="n">ext_force</span><span class="o">.</span><span class="n">fix_str</span><span class="p">)</span>
+    
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">run_def</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">write_input</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Write input file .lmpin&quot;&quot;&quot;</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input_name</span><span class="p">,</span><span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;This is the initial atom setup of </span><span class="si">%s</span><span class="s2">&quot;</span><span class="o">%</span><span class="bp">self</span><span class="o">.</span><span class="n">input_name</span><span class="p">)</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">world</span><span class="o">.</span><span class="n">region_def</span><span class="p">)</span>
+        
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Atoms</span><span class="se">\n\n</span><span class="s2">&quot;</span><span class="p">)</span>
+            
+            <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">particles</span><span class="p">:</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">atom_def</span><span class="p">)</span>
+            
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">traps</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">is_there_bonds</span> <span class="o">=</span> <span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">cutoff</span> <span class="o">==</span> <span class="n">np</span><span class="o">.</span><span class="n">Inf</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">um</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">traps</span><span class="p">]</span>
+                
+                <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">traps</span><span class="p">:</span>
+                    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">atom_def</span><span class="p">)</span>
+        
+                <span class="k">if</span> <span class="n">is_there_bonds</span><span class="p">:</span>
+                    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Bonds</span><span class="se">\n\n</span><span class="s2">&quot;</span><span class="p">)</span>
+                    
+                    <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">traps</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">cutoff</span> <span class="o">==</span> <span class="n">np</span><span class="o">.</span><span class="n">Inf</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">um</span><span class="p">:</span>
+                            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">bond_def</span><span class="p">)</span>
+                       
+                    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Bond Coeffs</span><span class="se">\n\n</span><span class="s2">&quot;</span><span class="p">)</span>
+                    <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">traps</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">cutoff</span> <span class="o">==</span> <span class="n">np</span><span class="o">.</span><span class="n">Inf</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">um</span><span class="p">:</span>
+                            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">bond_params</span><span class="p">)</span>
+                        
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">PairIJ Coeffs</span><span class="se">\n\n</span><span class="s2">&quot;</span><span class="p">)</span>
+            
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">world</span><span class="o">.</span><span class="n">interaction_def</span><span class="p">)</span>
+        
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">&quot;</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">write_run_def</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">run_steps</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">total_time</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">ureg</span><span class="o">.</span><span class="n">s</span><span class="p">)</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">timestep</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">ureg</span><span class="o">.</span><span class="n">s</span><span class="p">)))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">run_def</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">Template</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span> \
+            <span class="s2">&quot;### ---Run Commands--- ###</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span> \
+            <span class="s2">&quot;timestep 	$tmstp </span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span> \
+            <span class="s2">&quot;dump 	3 all custom $sampl $out_name id type $output</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span> \
+            <span class="s2">&quot;thermo_style 	custom step atoms</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span> \
+            <span class="s2">&quot;thermo 	100  </span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span> \
+            <span class="s2">&quot;run 	$runtm </span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">substitute</span><span class="p">(</span><span class="n">out_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_name</span><span class="p">,</span>
+                             <span class="n">tmstp</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">timestep</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">ureg</span><span class="o">.</span><span class="n">us</span><span class="p">))</span><span class="o">.</span><span class="n">magnitude</span><span class="p">,</span>
+                             <span class="n">sampl</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span>
+                                 <span class="mi">1</span><span class="o">/</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">framerate</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">ureg</span><span class="o">.</span><span class="n">Hz</span><span class="p">)</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">timestep</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">ureg</span><span class="o">.</span><span class="n">s</span><span class="p">)))),</span>
+                             <span class="n">runtm</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">run_steps</span><span class="p">,</span>
+                             <span class="n">output</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="s2"> &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="p">))</span>    
+    
+    <span class="k">def</span> <span class="nf">distribute_ids</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Gives an id number to all particles and traps. </span>
+<span class="sd">        -------</span>
+<span class="sd">        This must be done before generating the strings, to give the correct id to each atom and traps. &quot;&quot;&quot;</span>
+        
+        <span class="n">atoms_id</span> <span class="o">=</span> <span class="mi">1</span> <span class="c1"># these start at 1 because lammps starts at 1. </span>
+        <span class="n">atom_type</span> <span class="o">=</span> <span class="mi">1</span>
+    
+        <span class="n">particles</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">particles</span>
+        <span class="n">traps</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">traps</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">particles</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">particles</span> <span class="o">=</span> <span class="p">[</span><span class="n">particles</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">traps</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">traps</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="n">traps</span> <span class="o">=</span> <span class="p">[</span><span class="n">traps</span><span class="p">]</span>
+        
+        <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">particles</span><span class="p">:</span>
+            <span class="n">p</span><span class="o">.</span><span class="n">atoms_id</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">atoms_id</span><span class="p">,</span> <span class="n">atoms_id</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">positions</span><span class="p">)))</span>
+            <span class="n">p</span><span class="o">.</span><span class="n">atom_type</span> <span class="o">=</span> <span class="n">atom_type</span>
+
+            <span class="n">atoms_id</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">positions</span><span class="p">)</span>
+            <span class="n">atom_type</span> <span class="o">+=</span> <span class="mi">1</span>
+    
+        <span class="k">if</span> <span class="n">traps</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>  
+
+            <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">traps</span><span class="p">:</span>
+                <span class="n">t</span><span class="o">.</span><span class="n">traps_id</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">atoms_id</span><span class="p">,</span> <span class="n">atoms_id</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">positions</span><span class="p">)))</span>
+                <span class="n">t</span><span class="o">.</span><span class="n">atom_type</span> <span class="o">=</span> <span class="n">atom_type</span>
+
+                <span class="n">atoms_id</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">positions</span><span class="p">)</span>
+                <span class="n">atom_type</span> <span class="o">+=</span><span class="mi">1</span>
+
+            <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">traps</span><span class="p">:</span>
+                <span class="n">t</span><span class="o">.</span><span class="n">bond_to_particles</span><span class="p">()</span>
+
+            <span class="n">bonds_id</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">traps</span><span class="p">:</span>
+                <span class="n">t</span><span class="o">.</span><span class="n">bonds_id</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">bonds_id</span><span class="p">,</span><span class="n">bonds_id</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">bonds</span><span class="p">)))</span>
+                <span class="n">bonds_id</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">bonds</span><span class="p">)</span>
+                                         
 <div class="viewcode-block" id="sim.generate_scripts"><a class="viewcode-back" href="../../api.html#magcolloids.sim.generate_scripts">[docs]</a>    <span class="k">def</span> <span class="nf">generate_scripts</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        This method generates the input script for the lammps simulation. </span>
@@ -93,105 +245,27 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">input_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_name</span><span class="o">+</span><span class="s1">&#39;.lmpdata&#39;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">output_name</span> <span class="o">=</span>  <span class="bp">self</span><span class="o">.</span><span class="n">base_name</span><span class="o">+</span><span class="s1">&#39;.lammpstrj&#39;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">log_name</span> <span class="o">=</span>  <span class="bp">self</span><span class="o">.</span><span class="n">base_name</span><span class="o">+</span><span class="s1">&#39;.log&#39;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">pickle_name</span> <span class="o">=</span>  <span class="bp">self</span><span class="o">.</span><span class="n">base_name</span><span class="o">+</span><span class="s1">&#39;.jp&#39;</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">distribute_ids</span><span class="p">()</span>
         
         <span class="c1">### Create strings</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">particles</span><span class="o">.</span><span class="n">create_string</span><span class="p">()</span>
+
+        <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">particles</span><span class="p">:</span>
+            <span class="n">p</span><span class="o">.</span><span class="n">create_string</span><span class="p">()</span>
+            
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">traps</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">traps</span><span class="o">.</span><span class="n">create_string</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">traps</span><span class="p">:</span>
+                <span class="n">t</span><span class="o">.</span><span class="n">create_string</span><span class="p">()</span>
         
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">world</span><span class="o">.</span><span class="n">ext_force</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">world</span><span class="o">.</span><span class="n">ext_force</span><span class="o">.</span><span class="n">create_string</span><span class="p">()</span>
                 
         <span class="bp">self</span><span class="o">.</span><span class="n">world</span><span class="o">.</span><span class="n">create_string</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">create_string</span><span class="p">()</span>
-        
-        <span class="bp">self</span><span class="o">.</span><span class="n">run_steps</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">total_time</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">ureg</span><span class="o">.</span><span class="n">s</span><span class="p">)</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">timestep</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">ureg</span><span class="o">.</span><span class="n">s</span><span class="p">)))</span>
-        
-        <span class="bp">self</span><span class="o">.</span><span class="n">run_def</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">Template</span><span class="p">(</span><span class="s2">&quot;&quot;&quot; </span>
-<span class="s2">### ---Run Commands--- ###</span>
-<span class="s2">timestep 	$tmstp </span>
-<span class="s2">dump 	3 all custom $sampl $out_name id type $output</span>
-<span class="s2">thermo_style 	custom step atoms</span>
-<span class="s2">thermo 	100  </span>
-<span class="s2">run 	$runtm</span>
-<span class="s2">                    &quot;&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">substitute</span><span class="p">(</span><span class="n">out_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_name</span><span class="p">,</span>
-                             <span class="n">tmstp</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">timestep</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">ureg</span><span class="o">.</span><span class="n">us</span><span class="p">))</span><span class="o">.</span><span class="n">magnitude</span><span class="p">,</span>
-                             <span class="n">sampl</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span>
-                                 <span class="mi">1</span><span class="o">/</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">framerate</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">ureg</span><span class="o">.</span><span class="n">Hz</span><span class="p">)</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">timestep</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">ureg</span><span class="o">.</span><span class="n">s</span><span class="p">)))),</span>
-                             <span class="n">runtm</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">run_steps</span><span class="p">,</span>
-                             <span class="n">output</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="s2"> &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="p">))</span>
-                             
-                             
-        
-        <span class="c1">### Write script</span>
-        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">script_name</span><span class="p">,</span><span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;### ---preamble--- ###</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
-            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;log </span><span class="si">%s</span><span class="s2">&quot;</span><span class="o">%</span><span class="bp">self</span><span class="o">.</span><span class="n">log_name</span><span class="p">)</span>
-            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">world</span><span class="o">.</span><span class="n">world_def</span><span class="p">)</span>
-        
-            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">### ---Create Particles and Region--- ###</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
-        
-            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;read_data &quot;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">input_name</span><span class="p">)</span>
-                        
-            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">world</span><span class="o">.</span><span class="n">group_def</span><span class="p">)</span>
-        
-            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">### ---Variables--- ###</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span> 
-           
-            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">## magnetic field</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span> 
-            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">variable_def</span><span class="p">)</span>
-        
-            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">traps</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">## traps velocities</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span> 
-                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">traps</span><span class="o">.</span><span class="n">velocity</span><span class="p">)</span>
-        
-            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">world</span><span class="o">.</span><span class="n">ext_force</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">## external force</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span> 
-            
-                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">world</span><span class="o">.</span><span class="n">ext_force</span><span class="o">.</span><span class="n">calculation</span><span class="p">)</span>
-            
-            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">### ---Fixes--- ###</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span> 
-        
-            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">fix_def</span><span class="p">)</span>
-            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">world</span><span class="o">.</span><span class="n">integrator_def</span><span class="p">)</span>
-            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">world</span><span class="o">.</span><span class="n">gravity_def</span><span class="p">)</span>
-            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">world</span><span class="o">.</span><span class="n">wall_def</span><span class="p">)</span>
-            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">world</span><span class="o">.</span><span class="n">enforce2d</span><span class="p">)</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">traps</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">traps</span><span class="o">.</span><span class="n">velocity_fix</span><span class="p">)</span>
-        
-            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">world</span><span class="o">.</span><span class="n">ext_force</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">world</span><span class="o">.</span><span class="n">ext_force</span><span class="o">.</span><span class="n">fix_str</span><span class="p">)</span>
-            
-            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">run_def</span><span class="p">)</span>
 
-
-        <span class="c1">### Write input file</span>
-        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input_name</span><span class="p">,</span><span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;This is the initial atom setup of </span><span class="si">%s</span><span class="s2">&quot;</span><span class="o">%</span><span class="bp">self</span><span class="o">.</span><span class="n">input_name</span><span class="p">)</span>
-            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">world</span><span class="o">.</span><span class="n">region_def</span><span class="p">)</span>
-        
-            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Atoms</span><span class="se">\n\n</span><span class="s2">&quot;</span><span class="p">)</span>
-        
-            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">particles</span><span class="o">.</span><span class="n">atom_def</span><span class="p">)</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">traps</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">traps</span><span class="o">.</span><span class="n">atom_def</span><span class="p">)</span>
-        
-        
-            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">traps</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">traps</span><span class="o">.</span><span class="n">cutoff</span> <span class="o">==</span> <span class="n">np</span><span class="o">.</span><span class="n">Inf</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">um</span><span class="p">:</span>
-                    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Bonds</span><span class="se">\n\n</span><span class="s2">&quot;</span><span class="p">)</span>
-                    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">traps</span><span class="o">.</span><span class="n">bond_def</span><span class="p">)</span>
-        
-            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">traps</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">traps</span><span class="o">.</span><span class="n">cutoff</span> <span class="o">==</span> <span class="n">np</span><span class="o">.</span><span class="n">Inf</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">um</span><span class="p">:</span>
-                    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Bond Coeffs</span><span class="se">\n\n</span><span class="s2">&quot;</span><span class="p">)</span>
-                    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">traps</span><span class="o">.</span><span class="n">bond_params</span><span class="p">)</span>
-            
-            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">PairIJ Coeffs</span><span class="se">\n\n</span><span class="s2">&quot;</span><span class="p">)</span>
-            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">world</span><span class="o">.</span><span class="n">interaction_def</span><span class="p">)</span>
-        
-            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">&quot;</span><span class="p">)</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">write_run_def</span><span class="p">()</span>                     
+        <span class="bp">self</span><span class="o">.</span><span class="n">write_script</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">write_input</span><span class="p">()</span></div>
                     
 <div class="viewcode-block" id="sim.run"><a class="viewcode-back" href="../../api.html#magcolloids.sim.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">verbose</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;This function runs an input script named filename in lammps. The input should be located in target_dir&quot;&quot;&quot;</span>

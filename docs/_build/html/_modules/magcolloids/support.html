@@ -219,6 +219,8 @@
 <span class="sd">    * step = 1. The framerate, so to speak. </span>
 <span class="sd">    * verb = False. If verb = True, the routine prints indicators that is running. </span>
 <span class="sd">    * speedup allows us to do faster videos. Default is 1, which means normal ratio.</span>
+<span class="sd">    todo:</span>
+<span class="sd">    Fix for bidisperse particles. Take draw_trj as example. </span>
 <span class="sd">    &quot;&quot;&quot;</span>
     
     <span class="kn">from</span> <span class="nn">mpl_toolkits.axes_grid1</span> <span class="kn">import</span> <span class="n">make_axes_locatable</span>
@@ -232,7 +234,7 @@
         
     <span class="k">if</span> <span class="n">sim</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">region</span> <span class="o">=</span> <span class="p">[</span><span class="n">r</span><span class="o">.</span><span class="n">magnitude</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">sim</span><span class="o">.</span><span class="n">world</span><span class="o">.</span><span class="n">region</span><span class="p">]</span>
-        <span class="n">radius</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">particles</span><span class="o">.</span><span class="n">radius</span><span class="o">.</span><span class="n">magnitude</span> 
+        <span class="n">radius</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">particles</span><span class="o">.</span><span class="n">radius</span><span class="o">.</span><span class="n">magnitude</span>
         <span class="n">framerate</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">framerate</span><span class="o">.</span><span class="n">magnitude</span>
         <span class="c1">#runtime = sim.total_time.magnitude</span>
         <span class="n">timestep</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">timestep</span><span class="o">.</span><span class="n">magnitude</span>
@@ -316,20 +318,34 @@
 
     <span class="k">return</span> <span class="n">anim</span></div>
 
-<span class="k">def</span> <span class="nf">draw_trj</span><span class="p">(</span><span class="n">trj</span><span class="p">,</span><span class="n">sim</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">region</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">radius</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">iframe</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span><span class="n">ax</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">draw_trj</span><span class="p">(</span><span class="n">trj</span><span class="p">,</span><span class="n">sim</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">region</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">radius</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">iframe</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span><span class="n">ax</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">cmap</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">RdBu</span><span class="p">):</span>
     <span class="kn">from</span> <span class="nn">mpl_toolkits.axes_grid1</span> <span class="kn">import</span> <span class="n">make_axes_locatable</span>
     <span class="sd">&quot;&quot;&quot; </span>
 <span class="sd">    displays a trajectory statically. </span>
 <span class="sd">    If iframe is given, it displays particles in the frame specified by the index iframe. </span>
 <span class="sd">    If it isn&#39;t given, then it displays the last frame</span>
+<span class="sd">    </span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">ax</span><span class="p">:</span>
-        <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">7</span><span class="p">,</span><span class="mi">7</span><span class="p">))</span>
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span>
     
     <span class="k">if</span> <span class="n">sim</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">region</span> <span class="o">=</span> <span class="p">[</span><span class="n">r</span><span class="o">.</span><span class="n">magnitude</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">sim</span><span class="o">.</span><span class="n">world</span><span class="o">.</span><span class="n">region</span><span class="p">]</span>
-        <span class="n">radius</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">particles</span><span class="o">.</span><span class="n">radius</span><span class="o">.</span><span class="n">magnitude</span> 
+        <span class="n">radius</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span><span class="o">.</span><span class="n">radius</span><span class="o">.</span><span class="n">magnitude</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">sim</span><span class="o">.</span><span class="n">particles</span><span class="p">]</span>
 
+    <span class="k">try</span><span class="p">:</span> 
+        <span class="n">radius</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+        <span class="n">radius</span> <span class="o">=</span> <span class="p">[</span><span class="n">radius</span><span class="p">]</span>
+    
+    <span class="n">has_type</span> <span class="o">=</span> <span class="kc">True</span>    
+    <span class="k">if</span> <span class="p">(</span><span class="s2">&quot;type&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">trj</span><span class="o">.</span><span class="n">columns</span><span class="p">):</span>
+        <span class="k">if</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">radius</span><span class="p">)</span><span class="o">==</span><span class="mi">1</span><span class="p">):</span>
+            <span class="n">tp</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="n">has_type</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;trj should include a type column to use an array of radius values&quot;</span><span class="p">))</span>
+        
     <span class="n">idx</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">IndexSlice</span>
     <span class="n">particles</span> <span class="o">=</span> <span class="n">trj</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">get_level_values</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span>
     <span class="n">n_of_particles</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">trj</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">get_level_values</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">unique</span><span class="p">())</span>
@@ -342,15 +358,18 @@
     <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;$y [\mu</span><span class="si">{m}</span><span class="s2">]$&quot;</span><span class="p">)</span>
     
     <span class="n">patches</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">frames</span><span class="p">,</span><span class="n">iframe</span><span class="p">)</span>
+
     <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">p</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">particles</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">has_type</span><span class="p">:</span>
+            <span class="n">tp</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">trj</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">idx</span><span class="p">[</span><span class="n">frames</span><span class="p">[</span><span class="n">iframe</span><span class="p">],</span><span class="n">p</span><span class="p">],</span><span class="s1">&#39;type&#39;</span><span class="p">])</span><span class="o">-</span><span class="mi">1</span>
+
         <span class="n">c</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">Circle</span><span class="p">(</span>
-            <span class="p">(</span><span class="n">trj</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">idx</span><span class="p">[</span><span class="n">frames</span><span class="p">[</span><span class="n">iframe</span><span class="p">],</span><span class="n">p</span><span class="p">],</span><span class="s1">&#39;x&#39;</span><span class="p">],</span><span class="n">trj</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">idx</span><span class="p">[</span><span class="n">frames</span><span class="p">[</span><span class="n">iframe</span><span class="p">],</span><span class="n">p</span><span class="p">],</span><span class="s1">&#39;y&#39;</span><span class="p">]),</span> <span class="n">radius</span><span class="p">)</span>
+            <span class="p">(</span><span class="n">trj</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">idx</span><span class="p">[</span><span class="n">frames</span><span class="p">[</span><span class="n">iframe</span><span class="p">],</span><span class="n">p</span><span class="p">],</span><span class="s1">&#39;x&#39;</span><span class="p">],</span><span class="n">trj</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">idx</span><span class="p">[</span><span class="n">frames</span><span class="p">[</span><span class="n">iframe</span><span class="p">],</span><span class="n">p</span><span class="p">],</span><span class="s1">&#39;y&#39;</span><span class="p">]),</span> <span class="n">radius</span><span class="p">[</span><span class="n">tp</span><span class="p">])</span>
         <span class="n">patches</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
 
-    <span class="n">p</span> <span class="o">=</span> <span class="n">clt</span><span class="o">.</span><span class="n">PatchCollection</span><span class="p">(</span><span class="n">patches</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">plt</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">RdBu</span><span class="p">)</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="n">clt</span><span class="o">.</span><span class="n">PatchCollection</span><span class="p">(</span><span class="n">patches</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">cmap</span><span class="p">)</span>
     <span class="n">p</span><span class="o">.</span><span class="n">set_array</span><span class="p">(</span><span class="n">trj</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">idx</span><span class="p">[</span><span class="n">frames</span><span class="p">[</span><span class="n">iframe</span><span class="p">],:],</span><span class="s1">&#39;z&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
-    <span class="n">p</span><span class="o">.</span><span class="n">set_clim</span><span class="p">([</span><span class="n">region</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span><span class="o">+</span><span class="n">radius</span><span class="p">,</span><span class="n">region</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span><span class="o">-</span><span class="n">radius</span><span class="p">])</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">set_clim</span><span class="p">([</span><span class="n">region</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span><span class="o">+</span><span class="nb">min</span><span class="p">(</span><span class="n">radius</span><span class="p">),</span><span class="n">region</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span><span class="o">-</span><span class="nb">min</span><span class="p">(</span><span class="n">radius</span><span class="p">)])</span>
     <span class="n">ax</span><span class="o">.</span><span class="n">add_collection</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
             
     <span class="n">divider</span> <span class="o">=</span> <span class="n">make_axes_locatable</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>

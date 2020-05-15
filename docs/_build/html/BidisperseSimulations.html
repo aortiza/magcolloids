@@ -17,6 +17,8 @@
     <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="API" href="api.html" />
+    <link rel="prev" title="Creating Circle Traps using external forces." href="CircleTrapsScript.html" />
    
   <link rel="stylesheet" href="_static/custom.css" type="text/css" />
   
@@ -269,11 +271,13 @@ div.rendered_html tbody tr:hover {
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 <span class="kn">import</span> <span class="nn">matplotlib</span> <span class="k">as</span> <span class="nn">mpl</span>
 
-<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;../../magcolloids&#39;</span><span class="p">)</span>
+<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;../../&#39;</span><span class="p">)</span>
 
 <span class="kn">import</span> <span class="nn">magcolloids</span> <span class="k">as</span> <span class="nn">mgc</span>
 
 <span class="kn">from</span> <span class="nn">IPython.display</span> <span class="kn">import</span> <span class="n">HTML</span>
+
+<span class="n">idx</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">IndexSlice</span>
 </pre></div>
 </div>
 </div>
@@ -296,13 +300,304 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 </div>
+<div class="section" id="Several-types-of-particles:">
+<h2>Several types of particles:<a class="headerlink" href="#Several-types-of-particles:" title="Permalink to this headline">¶</a></h2>
+<p>A <code class="docutils literal notranslate"><span class="pre">particles</span></code> object creates one type of particles, with a fixed set of parameters. In the simulation, this particle is copied many times to the positions given by <code class="docutils literal notranslate"><span class="pre">positions</span></code>.</p>
+<p>To create a simulation with several types of particles, it is necessary to create different instances of <code class="docutils literal notranslate"><span class="pre">particles</span></code>. The <code class="docutils literal notranslate"><span class="pre">sim</span></code> and <code class="docutils literal notranslate"><span class="pre">world</span></code> objects accept an array of particles as arguments.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>
+<span></span><span class="n">region</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">20</span><span class="p">,</span><span class="mi">20</span><span class="p">,</span><span class="mf">4.1</span><span class="p">])</span>
 </pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">particles</span> <span class="o">=</span> <span class="n">mgc</span><span class="o">.</span><span class="n">particles</span><span class="p">(</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">5</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]])</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">um</span><span class="p">,</span>
+    <span class="n">radius</span> <span class="o">=</span> <span class="mi">2</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">um</span><span class="p">,</span>
+    <span class="n">susceptibility</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="n">diffusion</span><span class="o">=</span><span class="mf">0.07</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">um</span><span class="o">**</span><span class="mi">2</span><span class="o">/</span><span class="n">ureg</span><span class="o">.</span><span class="n">s</span><span class="p">,</span>
+    <span class="n">density</span> <span class="o">=</span> <span class="mi">0</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">kg</span><span class="o">/</span><span class="n">ureg</span><span class="o">.</span><span class="n">m</span><span class="o">**</span><span class="mi">3</span><span class="p">,</span>
+    <span class="n">temperature</span><span class="o">=</span><span class="mi">300</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">K</span><span class="p">)</span>
+
+<span class="n">particles2</span> <span class="o">=</span> <span class="n">mgc</span><span class="o">.</span><span class="n">particles</span><span class="p">(</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span><span class="o">-</span><span class="mi">3</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="o">-</span><span class="mi">3</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">5</span><span class="p">,</span><span class="o">-</span><span class="mi">3</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">5</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">0</span><span class="p">]])</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">um</span><span class="p">,</span>
+    <span class="n">radius</span> <span class="o">=</span> <span class="mi">1</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">um</span><span class="p">,</span>
+    <span class="n">susceptibility</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="n">diffusion</span><span class="o">=</span><span class="mf">0.07</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">um</span><span class="o">**</span><span class="mi">2</span><span class="o">/</span><span class="n">ureg</span><span class="o">.</span><span class="n">s</span><span class="p">,</span>
+    <span class="n">density</span> <span class="o">=</span> <span class="mi">0</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">kg</span><span class="o">/</span><span class="n">ureg</span><span class="o">.</span><span class="n">m</span><span class="o">**</span><span class="mi">3</span><span class="p">,</span>
+    <span class="n">temperature</span><span class="o">=</span><span class="mi">300</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">K</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">field</span> <span class="o">=</span> <span class="n">mgc</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="n">magnitude</span> <span class="o">=</span> <span class="mi">3</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">mT</span><span class="p">,</span> <span class="n">frequency</span> <span class="o">=</span> <span class="mi">100</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">Hz</span><span class="p">,</span> <span class="n">angle</span> <span class="o">=</span> <span class="mi">90</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">degrees</span><span class="p">)</span>
+
+<span class="n">world</span> <span class="o">=</span> <span class="n">mgc</span><span class="o">.</span><span class="n">world</span><span class="p">([</span><span class="n">particles</span><span class="p">,</span><span class="n">particles2</span><span class="p">],</span> <span class="n">temperature</span> <span class="o">=</span> <span class="mi">300</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">K</span><span class="p">,</span>
+                  <span class="n">region</span><span class="o">=</span><span class="n">region</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">um</span><span class="p">,</span> <span class="n">boundaries</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;p&#39;</span><span class="p">,</span><span class="s1">&#39;p&#39;</span><span class="p">,</span><span class="s1">&#39;f&#39;</span><span class="p">],</span> <span class="n">walls</span> <span class="o">=</span> <span class="p">[</span><span class="kc">False</span><span class="p">,</span><span class="kc">False</span><span class="p">,</span><span class="kc">True</span><span class="p">],</span>
+                  <span class="n">dipole_cutoff</span> <span class="o">=</span> <span class="mi">20</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">um</span><span class="p">)</span>
+
+<span class="n">sim</span> <span class="o">=</span> <span class="n">mgc</span><span class="o">.</span><span class="n">sim</span><span class="p">(</span><span class="n">dir_name</span> <span class="o">=</span> <span class="s2">&quot;bidisperse/&quot;</span><span class="p">,</span> <span class="n">file_name</span> <span class="o">=</span> <span class="s2">&quot;test_particles&quot;</span><span class="p">,</span>
+       <span class="n">timestep</span> <span class="o">=</span> <span class="mf">1e-4</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">s</span><span class="p">,</span> <span class="n">framerate</span> <span class="o">=</span> <span class="mi">30</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">Hz</span><span class="p">,</span> <span class="n">total_time</span> <span class="o">=</span> <span class="mi">30</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">s</span><span class="p">,</span>
+       <span class="n">particles</span> <span class="o">=</span> <span class="p">[</span><span class="n">particles</span><span class="p">,</span><span class="n">particles2</span><span class="p">],</span> <span class="n">world</span> <span class="o">=</span> <span class="n">world</span><span class="p">,</span> <span class="n">field</span> <span class="o">=</span> <span class="n">field</span><span class="p">,</span>
+       <span class="n">output</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;x&quot;</span><span class="p">,</span><span class="s2">&quot;y&quot;</span><span class="p">,</span><span class="s2">&quot;z&quot;</span><span class="p">,</span><span class="s2">&quot;mux&quot;</span><span class="p">,</span><span class="s2">&quot;muy&quot;</span><span class="p">,</span><span class="s2">&quot;muz&quot;</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">sim</span><span class="o">.</span><span class="n">generate_scripts</span><span class="p">()</span>
+<span class="n">sim</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+<span class="n">sim</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">trj</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">lazy_read</span><span class="p">[:]</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="mi">3</span><span class="p">),</span><span class="n">dpi</span><span class="o">=</span><span class="mi">150</span><span class="p">)</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">mgc</span><span class="o">.</span><span class="n">draw_trj</span><span class="p">(</span><span class="n">trj</span><span class="p">,</span><span class="n">sim</span><span class="p">,</span><span class="n">cmap</span><span class="o">=</span><span class="s2">&quot;plasma&quot;</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">trj_i</span> <span class="ow">in</span> <span class="n">trj</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s2">&quot;id&quot;</span><span class="p">):</span>
+    <span class="k">if</span> <span class="nb">all</span><span class="p">(</span><span class="n">trj_i</span><span class="o">.</span><span class="n">type</span><span class="o">==</span><span class="mi">1</span><span class="p">):</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">trj_i</span><span class="o">.</span><span class="n">x</span><span class="p">,</span><span class="n">trj_i</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;red&quot;</span><span class="p">,</span><span class="n">linewidth</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/BidisperseSimulations_12_0.png" src="_images/BidisperseSimulations_12_0.png" />
+</div>
+</div>
+</div>
+<div class="section" id="Bidisperse-traps">
+<h2>Bidisperse traps<a class="headerlink" href="#Bidisperse-traps" title="Permalink to this headline">¶</a></h2>
+<p>Just as <code class="docutils literal notranslate"><span class="pre">particles</span></code> object, the <code class="docutils literal notranslate"><span class="pre">bistable_trap</span></code> object creates a type of trap. Here as well, we must create different types of traps to give them different parameters.</p>
+<p>However, we must also specify the particles that will be affected by each trap. This is done by the <code class="docutils literal notranslate"><span class="pre">particles</span></code> argument. If we want a specific <code class="docutils literal notranslate"><span class="pre">bistable_trap</span></code> object to act only on some of the copies of the object <code class="docutils literal notranslate"><span class="pre">particles</span></code>, we can give it a subset specification. The subset can be a slice, or an array of indices.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">region</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">20</span><span class="p">,</span><span class="mi">20</span><span class="p">,</span><span class="mf">4.1</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">particles</span> <span class="o">=</span> <span class="n">mgc</span><span class="o">.</span><span class="n">particles</span><span class="p">(</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">5</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]])</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">um</span><span class="p">,</span>
+    <span class="n">radius</span> <span class="o">=</span> <span class="mi">2</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">um</span><span class="p">,</span>
+    <span class="n">susceptibility</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="n">diffusion</span><span class="o">=</span><span class="mf">0.07</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">um</span><span class="o">**</span><span class="mi">2</span><span class="o">/</span><span class="n">ureg</span><span class="o">.</span><span class="n">s</span><span class="p">,</span>
+    <span class="n">density</span> <span class="o">=</span> <span class="mi">0</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">kg</span><span class="o">/</span><span class="n">ureg</span><span class="o">.</span><span class="n">m</span><span class="o">**</span><span class="mi">3</span><span class="p">,</span>
+    <span class="n">temperature</span><span class="o">=</span><span class="mi">300</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">K</span><span class="p">)</span>
+
+<span class="n">traps</span> <span class="o">=</span> <span class="n">mgc</span><span class="o">.</span><span class="n">bistable_trap</span><span class="p">(</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">0</span><span class="p">]])</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">um</span><span class="p">,</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">]]),</span>
+                <span class="n">particles</span><span class="p">,</span> <span class="n">subsets</span> <span class="o">=</span> <span class="nb">slice</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">2</span><span class="p">),</span>
+                <span class="n">distance</span> <span class="o">=</span> <span class="mi">2</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">um</span><span class="p">,</span>
+                <span class="n">height</span> <span class="o">=</span> <span class="mi">0</span> <span class="o">*</span> <span class="n">ureg</span><span class="o">.</span><span class="n">pN</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">nm</span><span class="p">,</span>
+                <span class="n">stiffness</span> <span class="o">=</span> <span class="mf">3e-4</span> <span class="o">*</span> <span class="n">ureg</span><span class="o">.</span><span class="n">pN</span><span class="o">/</span><span class="n">ureg</span><span class="o">.</span><span class="n">nm</span><span class="p">)</span>
+
+<span class="n">traps2</span> <span class="o">=</span> <span class="n">mgc</span><span class="o">.</span><span class="n">bistable_trap</span><span class="p">(</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">5</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]])</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">um</span><span class="p">,</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]]),</span>
+                <span class="n">particles</span><span class="p">,</span> <span class="n">subsets</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="p">],</span>
+                <span class="n">distance</span> <span class="o">=</span> <span class="mi">0</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">um</span><span class="p">,</span>
+                <span class="n">height</span> <span class="o">=</span> <span class="mi">0</span> <span class="o">*</span> <span class="n">ureg</span><span class="o">.</span><span class="n">pN</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">nm</span><span class="p">,</span>
+                <span class="n">stiffness</span> <span class="o">=</span> <span class="mf">3e-4</span> <span class="o">*</span> <span class="n">ureg</span><span class="o">.</span><span class="n">pN</span><span class="o">/</span><span class="n">ureg</span><span class="o">.</span><span class="n">nm</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">field</span> <span class="o">=</span> <span class="n">mgc</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="n">magnitude</span> <span class="o">=</span> <span class="mi">0</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">mT</span><span class="p">,</span> <span class="n">frequency</span> <span class="o">=</span> <span class="mi">100</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">Hz</span><span class="p">,</span> <span class="n">angle</span> <span class="o">=</span> <span class="mi">90</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">degrees</span><span class="p">)</span>
+
+<span class="n">world</span> <span class="o">=</span> <span class="n">mgc</span><span class="o">.</span><span class="n">world</span><span class="p">(</span><span class="n">particles</span><span class="p">,</span> <span class="p">[</span><span class="n">traps</span><span class="p">,</span><span class="n">traps2</span><span class="p">],</span> <span class="n">temperature</span> <span class="o">=</span> <span class="mi">300</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">K</span><span class="p">,</span>
+                  <span class="n">region</span><span class="o">=</span><span class="n">region</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">um</span><span class="p">,</span> <span class="n">boundaries</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;p&#39;</span><span class="p">,</span><span class="s1">&#39;p&#39;</span><span class="p">,</span><span class="s1">&#39;f&#39;</span><span class="p">],</span> <span class="n">walls</span> <span class="o">=</span> <span class="p">[</span><span class="kc">False</span><span class="p">,</span><span class="kc">False</span><span class="p">,</span><span class="kc">True</span><span class="p">],</span>
+                  <span class="n">dipole_cutoff</span> <span class="o">=</span> <span class="mi">20</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">um</span><span class="p">)</span>
+
+<span class="n">sim</span> <span class="o">=</span> <span class="n">mgc</span><span class="o">.</span><span class="n">sim</span><span class="p">(</span><span class="n">dir_name</span> <span class="o">=</span> <span class="s2">&quot;bidisperse/&quot;</span><span class="p">,</span> <span class="n">file_name</span> <span class="o">=</span> <span class="s2">&quot;test_traps&quot;</span><span class="p">,</span>
+       <span class="n">timestep</span> <span class="o">=</span> <span class="mf">1e-4</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">s</span><span class="p">,</span> <span class="n">framerate</span> <span class="o">=</span> <span class="mi">30</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">Hz</span><span class="p">,</span> <span class="n">total_time</span> <span class="o">=</span> <span class="mi">60</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">s</span><span class="p">,</span>
+       <span class="n">particles</span> <span class="o">=</span> <span class="n">particles</span><span class="p">,</span><span class="n">traps</span> <span class="o">=</span> <span class="p">[</span><span class="n">traps</span><span class="p">,</span><span class="n">traps2</span><span class="p">],</span> <span class="n">world</span> <span class="o">=</span> <span class="n">world</span><span class="p">,</span> <span class="n">field</span> <span class="o">=</span> <span class="n">field</span><span class="p">,</span>
+       <span class="n">output</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;x&quot;</span><span class="p">,</span><span class="s2">&quot;y&quot;</span><span class="p">,</span><span class="s2">&quot;z&quot;</span><span class="p">,</span><span class="s2">&quot;mux&quot;</span><span class="p">,</span><span class="s2">&quot;muy&quot;</span><span class="p">,</span><span class="s2">&quot;muz&quot;</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">sim</span><span class="o">.</span><span class="n">generate_scripts</span><span class="p">()</span>
+<span class="n">sim</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+<span class="n">sim</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+
+<span class="n">trj</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">lazy_read</span><span class="p">[:]</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="mi">3</span><span class="p">),</span><span class="n">dpi</span><span class="o">=</span><span class="mi">150</span><span class="p">)</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">mgc</span><span class="o">.</span><span class="n">draw_trj</span><span class="p">(</span><span class="n">trj</span><span class="p">[</span><span class="n">trj</span><span class="o">.</span><span class="n">type</span><span class="o">==</span><span class="mi">1</span><span class="p">],</span><span class="n">sim</span><span class="p">,</span><span class="n">cmap</span><span class="o">=</span><span class="s2">&quot;plasma&quot;</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">trj_i</span> <span class="ow">in</span> <span class="n">trj</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s2">&quot;id&quot;</span><span class="p">):</span>
+    <span class="k">if</span> <span class="nb">all</span><span class="p">(</span><span class="n">trj_i</span><span class="o">.</span><span class="n">type</span><span class="o">==</span><span class="mi">1</span><span class="p">):</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">trj_i</span><span class="o">.</span><span class="n">x</span><span class="p">,</span><span class="n">trj_i</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;red&quot;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">trj_i</span><span class="o">.</span><span class="n">x</span><span class="p">,</span><span class="n">trj_i</span><span class="o">.</span><span class="n">y</span><span class="p">,</span><span class="s1">&#39;.&#39;</span><span class="p">,</span><span class="n">color</span><span class="o">=</span><span class="s2">&quot;k&quot;</span><span class="p">,</span> <span class="n">linewidth</span> <span class="o">=</span> <span class="o">.</span><span class="mi">5</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/BidisperseSimulations_19_0.png" src="_images/BidisperseSimulations_19_0.png" />
+</div>
+</div>
+<div class="section" id="What-happens-if-some-of-the-traps-are-pair-traps?">
+<h3>What happens if some of the traps are pair traps?<a class="headerlink" href="#What-happens-if-some-of-the-traps-are-pair-traps?" title="Permalink to this headline">¶</a></h3>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">region</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">20</span><span class="p">,</span><span class="mi">20</span><span class="p">,</span><span class="mf">4.1</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">particles</span> <span class="o">=</span> <span class="n">mgc</span><span class="o">.</span><span class="n">particles</span><span class="p">(</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">5</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]])</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">um</span><span class="p">,</span>
+    <span class="n">radius</span> <span class="o">=</span> <span class="mi">2</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">um</span><span class="p">,</span>
+    <span class="n">susceptibility</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="n">diffusion</span><span class="o">=</span><span class="mf">0.07</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">um</span><span class="o">**</span><span class="mi">2</span><span class="o">/</span><span class="n">ureg</span><span class="o">.</span><span class="n">s</span><span class="p">,</span>
+    <span class="n">density</span> <span class="o">=</span> <span class="mi">0</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">kg</span><span class="o">/</span><span class="n">ureg</span><span class="o">.</span><span class="n">m</span><span class="o">**</span><span class="mi">3</span><span class="p">,</span>
+    <span class="n">temperature</span><span class="o">=</span><span class="mi">300</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">K</span><span class="p">)</span>
+
+<span class="n">traps</span> <span class="o">=</span> <span class="n">mgc</span><span class="o">.</span><span class="n">bistable_trap</span><span class="p">(</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">0</span><span class="p">]])</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">um</span><span class="p">,</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">]]),</span>
+                <span class="n">particles</span><span class="p">,</span> <span class="n">subsets</span> <span class="o">=</span> <span class="nb">slice</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">2</span><span class="p">),</span>
+                <span class="n">distance</span> <span class="o">=</span> <span class="mi">2</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">um</span><span class="p">,</span>
+                <span class="n">height</span> <span class="o">=</span> <span class="mi">0</span> <span class="o">*</span> <span class="n">ureg</span><span class="o">.</span><span class="n">pN</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">nm</span><span class="p">,</span>
+                <span class="n">stiffness</span> <span class="o">=</span> <span class="mf">3e-4</span> <span class="o">*</span> <span class="n">ureg</span><span class="o">.</span><span class="n">pN</span><span class="o">/</span><span class="n">ureg</span><span class="o">.</span><span class="n">nm</span><span class="p">)</span>
+
+<span class="n">traps2</span> <span class="o">=</span> <span class="n">mgc</span><span class="o">.</span><span class="n">bistable_trap</span><span class="p">(</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">5</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]])</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">um</span><span class="p">,</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]]),</span>
+                <span class="n">particles</span><span class="p">,</span> <span class="n">subsets</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="p">],</span>
+                <span class="n">distance</span> <span class="o">=</span> <span class="mi">0</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">um</span><span class="p">,</span>
+                <span class="n">height</span> <span class="o">=</span> <span class="mi">0</span> <span class="o">*</span> <span class="n">ureg</span><span class="o">.</span><span class="n">pN</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">nm</span><span class="p">,</span>
+                <span class="n">stiffness</span> <span class="o">=</span> <span class="mf">1e-4</span> <span class="o">*</span> <span class="n">ureg</span><span class="o">.</span><span class="n">pN</span><span class="o">/</span><span class="n">ureg</span><span class="o">.</span><span class="n">nm</span><span class="p">,</span>
+                <span class="n">cutoff</span> <span class="o">=</span> <span class="mi">1</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">um</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">field</span> <span class="o">=</span> <span class="n">mgc</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="n">magnitude</span> <span class="o">=</span> <span class="mi">0</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">mT</span><span class="p">,</span> <span class="n">frequency</span> <span class="o">=</span> <span class="mi">100</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">Hz</span><span class="p">,</span> <span class="n">angle</span> <span class="o">=</span> <span class="mi">90</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">degrees</span><span class="p">)</span>
+
+<span class="n">world</span> <span class="o">=</span> <span class="n">mgc</span><span class="o">.</span><span class="n">world</span><span class="p">(</span><span class="n">particles</span><span class="p">,</span> <span class="p">[</span><span class="n">traps</span><span class="p">,</span><span class="n">traps2</span><span class="p">],</span> <span class="n">temperature</span> <span class="o">=</span> <span class="mi">300</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">K</span><span class="p">,</span>
+                  <span class="n">region</span><span class="o">=</span><span class="n">region</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">um</span><span class="p">,</span> <span class="n">boundaries</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;p&#39;</span><span class="p">,</span><span class="s1">&#39;p&#39;</span><span class="p">,</span><span class="s1">&#39;f&#39;</span><span class="p">],</span> <span class="n">walls</span> <span class="o">=</span> <span class="p">[</span><span class="kc">False</span><span class="p">,</span><span class="kc">False</span><span class="p">,</span><span class="kc">True</span><span class="p">],</span>
+                  <span class="n">dipole_cutoff</span> <span class="o">=</span> <span class="mi">20</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">um</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">sim</span> <span class="o">=</span> <span class="n">mgc</span><span class="o">.</span><span class="n">sim</span><span class="p">(</span><span class="n">dir_name</span> <span class="o">=</span> <span class="s2">&quot;bidisperse/&quot;</span><span class="p">,</span> <span class="n">file_name</span> <span class="o">=</span> <span class="s2">&quot;test_traps_pair&quot;</span><span class="p">,</span>
+       <span class="n">timestep</span> <span class="o">=</span> <span class="mf">1e-4</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">s</span><span class="p">,</span> <span class="n">framerate</span> <span class="o">=</span> <span class="mi">30</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">Hz</span><span class="p">,</span> <span class="n">total_time</span> <span class="o">=</span> <span class="mi">60</span><span class="o">*</span><span class="n">ureg</span><span class="o">.</span><span class="n">s</span><span class="p">,</span>
+       <span class="n">particles</span> <span class="o">=</span> <span class="n">particles</span><span class="p">,</span><span class="n">traps</span> <span class="o">=</span> <span class="p">[</span><span class="n">traps</span><span class="p">,</span><span class="n">traps2</span><span class="p">],</span> <span class="n">world</span> <span class="o">=</span> <span class="n">world</span><span class="p">,</span> <span class="n">field</span> <span class="o">=</span> <span class="n">field</span><span class="p">,</span>
+       <span class="n">output</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;x&quot;</span><span class="p">,</span><span class="s2">&quot;y&quot;</span><span class="p">,</span><span class="s2">&quot;z&quot;</span><span class="p">,</span><span class="s2">&quot;mux&quot;</span><span class="p">,</span><span class="s2">&quot;muy&quot;</span><span class="p">,</span><span class="s2">&quot;muz&quot;</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">sim</span><span class="o">.</span><span class="n">generate_scripts</span><span class="p">()</span>
+<span class="n">sim</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+<span class="n">sim</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+
+<span class="n">trj</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">lazy_read</span><span class="p">[:]</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[21]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="mi">3</span><span class="p">),</span><span class="n">dpi</span><span class="o">=</span><span class="mi">150</span><span class="p">)</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">mgc</span><span class="o">.</span><span class="n">draw_trj</span><span class="p">(</span><span class="n">trj</span><span class="p">[</span><span class="n">trj</span><span class="o">.</span><span class="n">type</span><span class="o">==</span><span class="mi">1</span><span class="p">],</span><span class="n">sim</span><span class="p">,</span><span class="n">cmap</span><span class="o">=</span><span class="s2">&quot;plasma&quot;</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">trj_i</span> <span class="ow">in</span> <span class="n">trj</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s2">&quot;id&quot;</span><span class="p">):</span>
+    <span class="k">if</span> <span class="nb">all</span><span class="p">(</span><span class="n">trj_i</span><span class="o">.</span><span class="n">type</span><span class="o">==</span><span class="mi">1</span><span class="p">):</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">trj_i</span><span class="o">.</span><span class="n">x</span><span class="p">,</span><span class="n">trj_i</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;red&quot;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">trj_i</span><span class="o">.</span><span class="n">x</span><span class="p">,</span><span class="n">trj_i</span><span class="o">.</span><span class="n">y</span><span class="p">,</span><span class="s1">&#39;.&#39;</span><span class="p">,</span><span class="n">color</span><span class="o">=</span><span class="s2">&quot;k&quot;</span><span class="p">,</span> <span class="n">linewidth</span> <span class="o">=</span> <span class="o">.</span><span class="mi">5</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/BidisperseSimulations_26_0.png" src="_images/BidisperseSimulations_26_0.png" />
+</div>
+</div>
+<p>That’s also fine</p>
 </div>
 </div>
 </div>
@@ -325,9 +620,15 @@ div.rendered_html tbody tr:hover {
 
 <h3>Navigation</h3>
 <p class="caption"><span class="caption-text">Contents:</span></p>
-<ul>
+<ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="getting_started.html">Introduction</a></li>
-<li class="toctree-l1"><a class="reference internal" href="getting_started.html#walkthrough">Walkthrough</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="getting_started.html#walkthrough">Walkthrough</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="Walkthrough.html">Walkthrough</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Walkthrough.html#Checking-that-simulation-has-correct-parameters.">Checking that simulation has correct parameters.</a></li>
+<li class="toctree-l2"><a class="reference internal" href="CircleTrapsScript.html">Creating Circle Traps using external forces.</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Bidisperse simulations</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="api.html">API</a></li>
 </ul>
 
@@ -335,6 +636,10 @@ div.rendered_html tbody tr:hover {
 <h3>Related Topics</h3>
 <ul>
   <li><a href="index.html">Documentation overview</a><ul>
+  <li><a href="getting_started.html">Introduction</a><ul>
+      <li>Previous: <a href="CircleTrapsScript.html" title="previous chapter">Creating Circle Traps using external forces.</a></li>
+      <li>Next: <a href="api.html" title="next chapter">API</a></li>
+  </ul></li>
   </ul></li>
 </ul>
 </div>

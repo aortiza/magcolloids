@@ -1,0 +1,43 @@
+### ---preamble--- ###
+log bidisperse/test.log
+units micro 
+atom_style hybrid sphere paramagnet bond 
+boundary p p f 
+ 
+neighbor 4.0 nsq 
+pair_style hybrid lj/cut/dipole/cut 1 20 
+bond_style biharmonic
+
+### ---Create Particles and Region--- ###
+read_data bidisperse/test.lmpdata
+group Atoms type 1 
+
+group Atoms type 2 
+mass * 1
+
+### ---Variables--- ###
+
+## magnetic field
+variable Bmag atom 2.6614538978577816e-06
+variable freq atom 9.999999999999999e-05
+variable theta atom 1.5707963267948966
+variable phi atom 0.0
+
+variable fieldx atom v_Bmag*cos(v_freq*time*2*PI+v_phi)*sin(v_theta)
+variable fieldy atom v_Bmag*sin(v_freq*time*2*PI+v_phi)*sin(v_theta)
+variable fieldz atom v_Bmag*cos(v_theta)
+
+### ---Fixes--- ###
+
+fix 	1 Atoms setdipole v_fieldx v_fieldy v_fieldz 0
+fix 	2 Atoms bd 300 0.001 561484 
+
+fix     3 Atoms addforce 0 0 -0.0
+fix 	6 Atoms wall/lj126 zlo EDGE 0.01 1.7817974362806785  2 zhi EDGE 0.01 1.7817974362806785  2  
+
+### ---Run Commands--- ###
+timestep 	100.0 
+dump 	3 all custom 333 bidisperse/test.lammpstrj id type x	 y	 z	 mux	 muy	 muz
+thermo_style 	custom step atoms
+thermo 	100  
+run 	100000 

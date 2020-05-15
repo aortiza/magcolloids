@@ -183,6 +183,8 @@ def animate_trj(trj, sim = None, region = None, radius = None,framerate = None, 
     * step = 1. The framerate, so to speak. 
     * verb = False. If verb = True, the routine prints indicators that is running. 
     * speedup allows us to do faster videos. Default is 1, which means normal ratio.
+    todo:
+    Fix for bidisperse particles. Take draw_trj as example. 
     """
     
     from mpl_toolkits.axes_grid1 import make_axes_locatable
@@ -196,7 +198,7 @@ def animate_trj(trj, sim = None, region = None, radius = None,framerate = None, 
         
     if sim is not None:
         region = [r.magnitude for r in sim.world.region]
-        radius = sim.particles.radius.magnitude 
+        radius = sim.particles.radius.magnitude
         framerate = sim.framerate.magnitude
         #runtime = sim.total_time.magnitude
         timestep = sim.timestep.magnitude
@@ -280,20 +282,34 @@ def animate_trj(trj, sim = None, region = None, radius = None,framerate = None, 
 
     return anim
 
-def draw_trj(trj,sim = None, region = None, radius = None, iframe=-1,ax=False):
+def draw_trj(trj,sim = None, region = None, radius = None, iframe=-1,ax=False,cmap = plt.cm.RdBu):
     from mpl_toolkits.axes_grid1 import make_axes_locatable
     """ 
     displays a trajectory statically. 
     If iframe is given, it displays particles in the frame specified by the index iframe. 
     If it isn't given, then it displays the last frame
+    
     """
     if not ax:
-        fig, ax = plt.subplots(1,1,figsize=(7,7))
+        ax = plt.gca()
     
     if sim is not None:
         region = [r.magnitude for r in sim.world.region]
-        radius = sim.particles.radius.magnitude 
+        radius = [p.radius.magnitude for p in sim.particles]
 
+    try: 
+        radius[0]
+    except AttributeError:
+        radius = [radius]
+    
+    has_type = True    
+    if ("type" not in trj.columns):
+        if (len(radius)==1):
+            tp = 1
+            has_type = False
+        else:
+            raise(ValueError("trj should include a type column to use an array of radius values"))
+        
     idx = pd.IndexSlice
     particles = trj.index.get_level_values('id').unique()
     n_of_particles = len(trj.index.get_level_values('id').unique())
@@ -306,15 +322,18 @@ def draw_trj(trj,sim = None, region = None, radius = None, iframe=-1,ax=False):
     ax.set_ylabel("$y [\mu{m}]$")
     
     patches = []
-    print(frames,iframe)
+
     for i,p in enumerate(particles):
+        if has_type:
+            tp = int(trj.loc[idx[frames[iframe],p],'type'])-1
+
         c = plt.Circle(
-            (trj.loc[idx[frames[iframe],p],'x'],trj.loc[idx[frames[iframe],p],'y']), radius)
+            (trj.loc[idx[frames[iframe],p],'x'],trj.loc[idx[frames[iframe],p],'y']), radius[tp])
         patches.append(c)
 
-    p = clt.PatchCollection(patches, cmap=plt.cm.RdBu)
+    p = clt.PatchCollection(patches, cmap=cmap)
     p.set_array(trj.loc[idx[frames[iframe],:],'z'].values)
-    p.set_clim([region[4]+radius,region[5]-radius])
+    p.set_clim([region[4]+min(radius),region[5]-min(radius)])
     ax.add_collection(p)
             
     divider = make_axes_locatable(ax)
