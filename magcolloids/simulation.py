@@ -24,18 +24,28 @@ class sim():
         
         self.particles = particles
         
-        if particles.__class__.__name__ == "particles":
-            self.particles=[particles]
-        else:
+        # particles can be an array or not, but self.particles must be an array. 
+        # In the lines below, I ensure that self.particles is set from an array
+        try: 
+            # If traps can be indexed, they are a list, and they can be assigned to self.traps
+            particles[0]
             self.particles=particles
+        except TypeError:
+            # If traps can't be indexed, they are placed inside a list
+            self.particles=[particles]
+        print(self.particles)
         
+        # same thing for traps
         if not traps is None:
-            if particles.__class__.__name__ == "bistable_trap":
-                self.traps=[traps]
-            else:
+            try:
+                # If traps can be indexed, they are a list, and they can be assigned to self.traps
+                traps[0]
                 self.traps=traps
+            except TypeError:
+                 # If traps can't be indexed, they are placed inside a list
+                self.traps=[traps]
         else:
-            self.traps = traps
+            self.traps = None
         
         self.world = world
         self.field = field
