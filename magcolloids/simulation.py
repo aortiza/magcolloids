@@ -33,7 +33,6 @@ class sim():
         except TypeError:
             # If traps can't be indexed, they are placed inside a list
             self.particles=[particles]
-        print(self.particles)
         
         # same thing for traps
         if not traps is None:
