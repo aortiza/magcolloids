@@ -192,17 +192,29 @@ def animate_trj(trj, sim = None, region = None, radius = None,framerate = None, 
     idx = pd.IndexSlice
     
     if not ax:
-        fig, ax = plt.subplots(1,1,figsize=(7,7))
-    else: 
-        fig = ax.figure
+        ax = plt.gca()
+    fig = ax.figure
         
     if sim is not None:
         region = [r.magnitude for r in sim.world.region]
-        radius = sim.particles.radius.magnitude
+        radius = [p.radius.magnitude for p in sim.particles]
         framerate = sim.framerate.magnitude
         #runtime = sim.total_time.magnitude
         timestep = sim.timestep.magnitude
 
+    try: 
+        radius[0]
+    except AttributeError:
+        radius = [radius]
+    
+    has_type = True    
+    if ("type" not in trj.columns):
+        if (len(radius)==1):
+            tp = 1
+            has_type = False
+        else:
+            raise(ValueError("trj should include a type column to use an array of radius values"))
+            
     particles = trj.index.get_level_values('id').unique()
     n_of_particles = len(trj.index.get_level_values('id').unique())
 
@@ -233,7 +245,10 @@ def animate_trj(trj, sim = None, region = None, radius = None,framerate = None, 
     
     patches = []
     for i,p in enumerate(particles):
-        c = plt.Circle((0, 0), radius)
+        if has_type:
+            tp = int(trj.loc[idx[frames[0],p],'type'])-1
+            
+        c = plt.Circle((0, 0), radius[tp])
         patches.append(c)
 
     p = clt.PatchCollection(patches, cmap=plt.cm.RdBu)
