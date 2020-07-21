@@ -203,7 +203,7 @@ def animate_trj(trj, sim = None, region = None, radius = None, framerate = None,
         timestep = sim.timestep.magnitude
 
     if cmap is None:
-        plt.cm.RdBu
+        cmap = plt.cm.RdBu
         
     try: 
         radius[0]
@@ -307,7 +307,7 @@ def animate_trj(trj, sim = None, region = None, radius = None, framerate = None,
 
     return anim
 
-def draw_trj(trj,sim = None, region = None, radius = None, iframe=-1, ax=False,cmap = plt.cm.RdBu, time_index = "frame"):
+def draw_trj(trj,sim = None, region = None, radius = None, iframe=-1, ax=False, time_index = "frame", color_field = "z", color_label='$z [\mu{m}]$', clim = None, cmap = None):
     from mpl_toolkits.axes_grid1 import make_axes_locatable
     """ 
     displays a trajectory statically. 
@@ -334,6 +334,11 @@ def draw_trj(trj,sim = None, region = None, radius = None, iframe=-1, ax=False,c
             has_type = False
         else:
             raise(ValueError("trj should include a type column to use an array of radius values"))
+     
+    if clim is None:
+        clim = [region[4]+radius,region[5]-radius]
+    if cmap is None:
+        cmap = plt.cm.RdBu
         
     idx = pd.IndexSlice
     particles = trj.index.get_level_values('id').unique()
@@ -357,13 +362,14 @@ def draw_trj(trj,sim = None, region = None, radius = None, iframe=-1, ax=False,c
         patches.append(c)
 
     p = clt.PatchCollection(patches, cmap=cmap)
-    p.set_array(trj.loc[idx[frames[iframe],:],'z'].values)
-    p.set_clim([region[4]+min(radius),region[5]-min(radius)])
+    p.set_array(trj.loc[idx[frames[iframe],:],color_field].values)
+    p.set_clim(clim)
+    
     ax.add_collection(p)
             
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size="5%", pad=0)
-    plt.colorbar(p,label='$z [\mu{m}]$',cax=cax)
+    plt.colorbar(p,label=color_label,cax=cax)
 
     return ax
     
