@@ -42,12 +42,6 @@ class particles():
         
         self.drag_mass = (drag*damp).to(ureg.pg)
         
-        if atoms_id is None:
-            atoms_id = np.arange(len(self.positions))
-        
-        self.atoms_id = atoms_id
-        self.atom_type = atom_type
-        
     def create_string(self):
         """ creates the strings that then are introduced into the lammps scripts"""
         
@@ -58,7 +52,7 @@ class particles():
         self.atom_def = st.Template(
             """$atom_ix\t $atom_type\t $center\t $diameter\t $density\t $moment\t $direction\t $susceptibility\t $trap_ix #$string""").substitute(
                 atom_ix = "$atom_ix",
-                atom_type = self.atom_type+1,
+                atom_type = self.atom_type,
                 center = "$x0\t $y0\t $z0",
                 diameter = (self.radius*2).magnitude,
                 density = ((self.drag_mass)/(4/3*np.pi*self.radius**3)).magnitude,
@@ -75,7 +69,7 @@ class particles():
                 atom_ix = ix,
                 x0 = c[0], y0 = c[1], z0 = c[2],
                 atom_trap = ix)
-                    for ix,c in zip(self.atoms_id+1,self.positions.magnitude)
+                    for ix,c in zip(self.atoms_id,self.positions.magnitude)
             ]
         )+"\n"
                 
@@ -85,6 +79,7 @@ class bistable_trap():
                 positions,
                 directions,
                 particles,
+                subsets = None,
                 trap_id = None,
                 atom_type = 1,
                 bonds_id = None,
@@ -99,7 +94,7 @@ class bistable_trap():
         The required arguments are: 
             * positions
             * directions
-            * particles
+            * particles (can be an array of id's or a particles object)
         trap_id is an integer that uniquelly identifies each atom. This means that a trap can't have a trap_id if an atom has it. 
         atom_type is the an integer that identifies the trap type. Again, the uniqueness holds also to atoms.
         """
@@ -112,52 +107,67 @@ class bistable_trap():
         self.stiffness = stiffness.to(ureg.pg/ureg.us**2)
         self.height_spread = height_spread
         
-        self.bonds = particles
-        if trap_id is None:
-            trap_id = np.arange(
-                len(self.positions),len(self.positions)+len(self.positions))
-                
-        self.atoms_id = trap_id
+        self.particles = particles
         
-        if bonds_id is None:
-            bonds_id = np.arange(len(self.positions))
-            
-        self.bonds_id = bonds_id
-          
+        if subsets is None:
+            try: 
+                subsets = [slice(None) for p in particles]
+            except TypeError:
+                subsets = slice(None)
+                
+        self.subsets = subsets
+                  
         self.atom_type = atom_type
         self.cutoff = cutoff
         self.velocity = velocity
+    
+    def bond_to_particles(self):
+        """ Assign bonds from traps to particles. 
         
+        Assigns bonds to the particles specified in self.particles.
+        self.particles is a particle object or a list of particle objects, but the bonds are defined only on the subset defined by the ids_subset attribute.
+        todo: think this through """
+        
+        try:
+            # this happens if particles is only one element
+            self.bonds = self.particles.atoms_id[self.subsets]
+            self.bonded_atom_type = self.particles.atom_type + np.zeros(len(self.particles.atoms_id))
+            
+        except AttributeError:
+            # this happens if particles is an array
+            self.bonds = np.concatenate([p.atoms_id[s] for p,s in zip(self.particles,self.subsets)])
+            self.bonded_atom_type = np.concatenate([p.atom_type + np.zeros(len(p.atoms_id[s])) 
+                                                        for p,s in zip(self.particles,self.subsets)])
+            
     def create_string(self):
         
         # We first define the string pattern that defines a single trap
         atom_string = ("trap id|type|x0|y0|z0|1|1|0|dx|dy|dz|0|atom_id")
         
         self.atom_def = st.Template(
-            """$atom_ix\t $atom_type\t $center\t $diameter\t $density\t $moment\t $direction\t $susceptibility\t $trap_ix #$string """).substitute(
-                atom_ix = "$atom_ix",
-                atom_type = self.atom_type+1,
+            "$trap_ix\t $atom_type\t $center\t $diameter\t $density\t $moment\t $direction\t $susceptibility\t $atom_ix #$string").substitute(
+                trap_ix = "$trap_ix",
+                atom_type = self.atom_type,
                 center = "$x0\t $y0\t $z0",
                 diameter = 1,
                 density = 1,
                 moment = 0,
                 direction = "$dx0\t $dy0\t $dz0",
                 susceptibility = 0,
-                trap_ix = "$ix",
-                string = atom_string
-        )
+                atom_ix = "$atom_ix",
+                string = atom_string)
         
         # Now we use the string pattern defined before, and define an instance for each trap.
         self.atom_def = "\n".join(
             [st.Template(self.atom_def).substitute(
-                atom_ix = ix,
+                trap_ix = ix,
                 x0 = c[0], y0 = c[1], z0 = c[2],
-                dx0 = d[0], dy0 = d[1], dz0 = d[2],ix=a_ix)
-                    for ix,c,d,a_ix in zip(self.atoms_id+1,self.positions.magnitude,
-                        self.directions*self.distance.magnitude,
-                        self.bonds.atoms_id+1)
-            ]
-        )+"\n"
+                dx0 = d[0], dy0 = d[1], dz0 = d[2],atom_ix=a_ix)
+                    for ix,c,d,a_ix in zip(
+                        self.traps_id, 
+                        self.positions.magnitude, self.directions*self.distance.magnitude,
+                        self.bonds)])+"\n"
+        
         if self.cutoff == np.inf*ureg.um:
             # The bonds are defined as a conection from a trap, to an atom. the bond type is equal to the bond id (bond_ix) because every bond is unique. Only that way can disorder be introduced
             
@@ -166,41 +176,33 @@ class bistable_trap():
                     bond_ix = b,
                     bond_type = b,
                     trap_ix = i,
-                    atom_ix = j) for b,i,j in zip(self.bonds_id+1,self.atoms_id+1,self.bonds.atoms_id+1)]
+                    atom_ix = j) for b,i,j in zip(self.bonds_id,self.traps_id,self.bonds)]
             )+"\n"
-            
             # The bond params are defined by bond type. These determine the stiffness and height of the traps
-            height_disorder = self.height *(np.random.randn(len(self.atoms_id))*self.height_spread+1)
+            height_disorder = self.height *(np.random.randn(len(self.traps_id))*self.height_spread+1)
             height_disorder = height_disorder.to(ureg.pg*ureg.um**2/ureg.us**2).magnitude
         
             self.bond_params = "\n".join([st.Template(
                 """$bond_type  $stiffness $height_energy""").substitute(
                         bond_type = i, stiffness = self.stiffness.magnitude, height_energy = h
-                    ) for i,h in zip(self.bonds_id+1,height_disorder)])+"\n"
+                    ) for i,h in zip(self.bonds_id,height_disorder)])+"\n"
             # If there is no cuttoff, the trap doesn't have a pair interaction. 
-            self.pair_def = "\n".join([st.Template(
-                """$atom_type $trap_type none""").substitute(
-                    atom_type = self.bonds.atom_type+1,
-                    trap_type = self.atom_type+1,
-                    k_outer = self.stiffness.magnitude,
-                    k_inner = self.height.to(ureg.pg*ureg.um**2/ureg.us**2).magnitude,
-                    cutoff = self.cutoff)])
                     
         else: 
             # If there is a cuttoff, the trap is defined as a pair interaction between types. For the moment this means the disorder in the height is ignored. 
-            self.pair_def = "\n".join([st.Template(
+            
+            self.pair_def = st.Template("\n".join([st.Template(
                 """$atom_type $trap_type biharmonic $k_outer $k_inner $cutoff""").substitute(
-                    atom_type = self.bonds.atom_type+1,
-                    trap_type = self.atom_type+1,
+                    atom_type = "$type_i",
+                    trap_type = "$type_j",
                     k_outer = self.stiffness.magnitude,
                     k_inner = self.height.to(ureg.pg*ureg.um**2/ureg.us**2).magnitude,
-                    cutoff = self.cutoff.to(ureg.um).magnitude)])          
-        
+                    cutoff = self.cutoff.to(ureg.um).magnitude)]))
+                    
         if self.velocity is not None:
             self.velocity_fix = "fix		7 Traps move variable NULL NULL NULL v_vx v_vy v_vz"
         else:
             self.velocity_fix = ""
-            self.velocity = ""
             
 class ext_force(): 
     
@@ -214,7 +216,6 @@ class ext_force():
         variables = "%sx %sy %sz"%tuple(3*[self.variable])
         self.fix_str = "fix		8 Atoms addforce "+variables
     
-
 class world():
     def __init__(self, particles,
                 traps = None,
@@ -231,7 +232,7 @@ class world():
         the lj and dipole parameters are in units of radius. 
         .. to do::
                 If the dipole_cutoff is not given, the program should calculate a default cutoff as the length when the field is reduced to a fraction of KbT. 
-    """
+        """
         if particles.__class__.__name__ == "particles":
             self.particles=[particles]
         else:
@@ -289,16 +290,25 @@ class world():
                     lj_cut=((self.particles[0].radius)*self.lj_cutoff).magnitude,
                     )
 
-    
-    def create_string(self):
-        
+    def header_string(self):
+        """ Define the header string of the input and script files. 
+        * The enforce 2d string if necessary
+        * The units
+        * The atom_style, pair_style and bond_style
+        * The size of the neighbor skin.
+        * region parameters:
+            * number of atoms and of traps.
+            * number of atom types and trap types. Note that atoms and traps can be assigned different parameters even if they are the same type. The atom and trap types and the trap normally determine what fixes are applied to them. 
+            * the region definition. 
+        """
         if self.enforce2d:
             dimension = "dimension 2"
         else:
             dimension = ""
-            
+
         particle_types = len(self.particles)
         total_particles = sum([len(p.positions) for p in self.particles])
+
         if not self.traps is None:
             trap_types = len(self.traps)
             total_bond_traps = sum([len(t.positions) for t in self.traps if t.cutoff==np.Inf*t.cutoff.units])
@@ -307,17 +317,21 @@ class world():
             trap_types = 0
             total_bond_traps = 0
             total_pair_traps = 0
-        
+        # Traps can be pair traps, or bond traps. 
+        # pair traps are finite. They have a cuttoff after which they stop being effective. They also can act on any atom that comes close to them. 
+
+        # bond traps act on a specific set of particles. They can also have a cuttoff, but if a particle leaves the trap, it will keep being associated to it. It cannot then be trapped by an adjoining trap.
         if total_pair_traps>0:  
-            self.world_def = st.Template("""
-units micro
-atom_style hybrid sphere paramagnet bond
-boundary $x_bound $y_bound $z_bound
-$dimension
-neighbor 4.0 nsq
-pair_style hybrid biharmonic $bh_cut lj/cut/dipole/cut $lj_cut $dpl_cut
-bond_style biharmonic
-""")
+            self.world_def = st.Template(
+            "\n" + \
+            "units micro \n" +\
+            "atom_style hybrid sphere paramagnet bond \n" +\
+            "boundary $x_bound $y_bound $z_bound \n" +\
+            "$dimension \n" +\
+            "neighbor 4.0 nsq \n" +\
+            "pair_style hybrid biharmonic $bh_cut lj/cut/dipole/cut $lj_cut $dpl_cut \n" +\
+            "bond_style biharmonic \n")
+            
             self.world_def = self.world_def.substitute(
                                 x_bound = self.boundaries[0],
                                 y_bound = self.boundaries[1],
@@ -328,15 +342,16 @@ bond_style biharmonic
                                 dimension = dimension
                                 )
         else:
-            self.world_def = st.Template("""
-units micro
-atom_style hybrid sphere paramagnet bond
-boundary $x_bound $y_bound $z_bound
-$dimension
-neighbor 4.0 nsq
-pair_style hybrid lj/cut/dipole/cut $lj_cut $dpl_cut
-bond_style biharmonic
-""")
+            self.world_def = st.Template(
+            "\n" + \
+            "units micro \n" +\
+            "atom_style hybrid sphere paramagnet bond \n" +\
+            "boundary $x_bound $y_bound $z_bound \n" +\
+            "$dimension \n" +\
+            "neighbor 4.0 nsq \n" +\
+            "pair_style hybrid lj/cut/dipole/cut $lj_cut $dpl_cut \n" +\
+            "bond_style biharmonic\n")
+
             self.world_def = self.world_def.substitute(
                                             x_bound = self.boundaries[0],
                                             y_bound = self.boundaries[1],
@@ -346,18 +361,17 @@ bond_style biharmonic
                                             dpl_cut = self.dipole_cutoff.magnitude,
                                             dimension = dimension
                                             )
-        
-        self.region_def = st.Template("""
-$total_atoms atoms
-$atom_types atom types
-$bonds bonds
-$bonds bond types
-$spx1 $spx2 xlo xhi
-$spy1 $spy2 ylo yhi
-$spz1 $spz2 zlo zhi
-        """)
-        
-            
+
+        self.region_def = st.Template(
+        "\n" + \
+        "$total_atoms atoms \n" +\
+        "$atom_types atom types \n" +\
+        "$bonds bonds \n" +\
+        "$bonds bond types \n" +\
+        "$spx1 $spx2 xlo xhi \n" +\
+        "$spy1 $spy2 ylo yhi \n" +\
+        "$spz1 $spz2 zlo zhi \n")
+
         self.region_def = self.region_def.substitute(
             total_atoms = total_particles+total_bond_traps+total_pair_traps,
             atom_types = particle_types+trap_types,
@@ -368,7 +382,11 @@ $spz1 $spz2 zlo zhi
             spy2 = self.region[3].magnitude,
             spz1 = self.region[4].magnitude,
             spz2 = self.region[5].magnitude)
+    
+    def interaction_strings(self):
+        """ Create the strings that define the interactions between atoms."""
         
+        # This template is used to define interactions between atoms.
         self.interaction_def =st.Template(
             """ 1 1 $lj_eps $lj_sgm $lj_cut $dp_cut""").substitute(
                 lj_eps=self.lj_parameters[0].magnitude,
@@ -379,53 +397,73 @@ $spz1 $spz2 zlo zhi
             
         lj_interaction_def = st.Template(
             """$type_i $type_j lj/cut/dipole/cut $lj_eps $lj_sgm $lj_cut $dp_cut""")
-        
+        # particles interact with a bond trap thrnough a null interaction. The interaction is defined by the bond type, not by the interaction 
         null_interaction_def = st.Template(
             """$type_i $type_j none""")
                  
-        self.interaction_def = []   
+        self.interaction_def = []
+        
+        # colloidal particle parameters are defined in their string in the lmpdata file. A single atom type can have different parameters, without creating different atom types. Atom types could be useful if we wanted, for example, to drive a subset of atoms. But this is not what we are doing, and we might be able to do it in another way. 
+        # In any case, particles should all interact by the same interactions, which is what makes them particles. It makes sense to define different interactions for example for traps, and then we can get a different atom type. 
+        
+        # UPDATE: Most parameters can be set individually on the atom definition line of the input file. But the solid-like interactions of finite size colloids is given by their Lennard-Jones parameter, which is defined for each interaction. 
+        # This is a bit of a pain in the ass from lammps, because the radius which is defined for the volume could be directly used to rescale the LJ potential. But it isn't, and different radius of particles interact with each other through potentials with different parameters. 
+        
+        
         for i,pi in enumerate(self.particles):
             for j,pj in enumerate(self.particles[i:]):
                 self.interaction_def.append(lj_interaction_def.substitute(
-                        type_i = pi.atom_type+1, type_j = pj.atom_type+1,
-                        lj_eps=self.lj_parameters[0].magnitude,
-                        lj_sgm=((pj.radius+pi.radius) * self.lj_parameters[1]).magnitude,
-                        lj_cut=((pj.radius+pi.radius) * self.lj_cutoff).magnitude,
-                        dp_cut = self.dipole_cutoff.magnitude))
-                     
+                    type_i = pi.atom_type, type_j = pj.atom_type,
+                    lj_eps=self.lj_parameters[0].magnitude,
+                    lj_sgm=((pj.radius+pi.radius) * self.lj_parameters[1]).magnitude,
+                    lj_cut=((pj.radius+pi.radius) * self.lj_cutoff).magnitude,
+                    dp_cut = self.dipole_cutoff.magnitude))
+             
         for i,pi in enumerate(self.particles):
             if self.traps is not None:
                 for j,tj in enumerate(self.traps):
                     if tj.cutoff == np.inf*ureg.um:
                         self.interaction_def.append(null_interaction_def.substitute(
-                            type_i = pi.atom_type+1, type_j = tj.atom_type+1))
+                            type_i = pi.atom_type, type_j = tj.atom_type))
                     else:
-                        self.interaction_def.append(tj.pair_def)
-
+                        if pi.atom_type in tj.bonded_atom_type:
+                            self.interaction_def.append(tj.pair_def.substitute(
+                                type_i = pi.atom_type, type_j = tj.atom_type))
+                        else:
+                            self.interaction_def.append(null_interaction_def.substitute(
+                                type_i = pi.atom_type, type_j = tj.atom_type))
+                                
         if self.traps is not None:
             for i,ti in enumerate(self.traps):
                 for j,tj in enumerate(self.traps[i:]):
                     self.interaction_def.append(null_interaction_def.substitute(
-                            type_i = ti.atom_type+1, type_j = tj.atom_type+1))
-                            
+                            type_i = ti.atom_type, type_j = tj.atom_type))
+                    
         self.interaction_def = "\n".join(self.interaction_def)
-            
+    
         #atom_group = "group Atoms type $particle_"
         self.group_def = "\n"+"\n".join([
             st.Template(
-                """group Atoms type $particle_type
-""").substitute(
-                    particle_type = p.atom_type+1
+                """group Atoms type $particle_type \n""").substitute(
+                    particle_type = p.atom_type
                 ) for p in self.particles
             ])
         if self.traps is not None:    
             self.group_def += "\n".join([
                 st.Template(
-                    """group Traps type $particle_type
-""").substitute(
-                        particle_type = p.atom_type+1
+                    """group Traps type $particle_type \n""").substitute(
+                        particle_type = p.atom_type
                         ) for p in self.traps
                     ])
+                        
+    def create_string(self):
+        """ Creates the strings that define the world parameters. These strings will be used by the simulation class to build the LAMMPS script and input file (.lmpin and .lmpdata).
+        to do: 
+        divide and conquer. 
+        """
+        self.header_string()
+       
+        self.interaction_strings()
             
         self.group_def += """mass * 1\n"""
         
@@ -436,9 +474,9 @@ $spz1 $spz2 zlo zhi
         self.seed = np.random.randint(1000000)
         
         fx_no = 2
-        self.integrator_def = st.Template("""
-fix 	$fx_no Atoms bd $temp $damp $seed 
-""").substitute(fx_no = fx_no,temp=self.temperature.magnitude, damp=damp.magnitude, seed=self.seed)
+        self.integrator_def = st.Template(
+            "\nfix 	$fx_no Atoms bd $temp $damp $seed \n").substitute(
+                fx_no = fx_no, temp=self.temperature.magnitude, damp=damp.magnitude, seed=self.seed)
         
         fx_no = 3
         self.gravity_force = (
@@ -446,9 +484,7 @@ fix 	$fx_no Atoms bd $temp $damp $seed
             ).to(ureg.pg*ureg.um/ureg.us**2)
         
         fix_no = 4
-        self.gravity_def = st.Template("""
-fix     $fx_no Atoms addforce 0 0 $mg
-""").substitute(fx_no = fx_no, mg = -self.gravity_force.magnitude) # pg*um/(us^2) (I hope)
+        self.gravity_def = st.Template("\nfix     $fx_no Atoms addforce 0 0 $mg \n").substitute(fx_no = fx_no, mg = -self.gravity_force.magnitude) # pg*um/(us^2) (I hope)
         
         fx_no = 5
         if self.enforce2d:
@@ -466,14 +502,13 @@ fix     $fx_no Atoms addforce 0 0 $mg
             self.seed = seed
         else:
             self.seed = np.random.randint(1000000)
-            
-                
-        
+              
 class field():
     def __init__(self,
                 magnitude = 10*ureg.mT,
                 frequency = 0*ureg.Hz,
-                angle = 0*ureg.degree, 
+                angle = 0*ureg.degree,
+                phase = 0*ureg.degree, 
                 fieldx=None, fieldy = None, fieldz = None,
                 multibody_iter = 0):
         """
@@ -501,32 +536,33 @@ class field():
                 (frequency.magnitude+("*%g" % (1*frequency.units).to(ureg.MHz).magnitude))*ureg.MHz
         
         self.angle = angle.to(ureg.rad)#degrees to radians
+        self.phase = phase.to(ureg.rad)#degrees to radians
                 
         self.multibody_iter = multibody_iter
-        self.fieldx = "v_Bmag*sin(v_freq*time*2*PI)*sin(v_theta)"
-        self.fieldy = "v_Bmag*cos(v_freq*time*2*PI)*sin(v_theta)"
+        self.fieldx = "v_Bmag*cos(v_freq*time*2*PI+v_phi)*sin(v_theta)"
+        self.fieldy = "v_Bmag*sin(v_freq*time*2*PI+v_phi)*sin(v_theta)"
         self.fieldz = "v_Bmag*cos(v_theta)"
         
     def create_string(self):
-        self.variable_def = st.Template("""
-variable Bmag atom $magnitude
-variable freq atom $freq
-variable theta atom $theta
 
-variable fieldx atom $fieldx
-variable fieldy atom $fieldy
-variable fieldz atom $fieldz
-""").substitute(
-                magnitude = self.H_magnitude.magnitude,
-                freq = self.frequency.magnitude,
-                theta = self.angle.magnitude,
-                fieldx = self.fieldx,
-                fieldy = self.fieldy,
-                fieldz = self.fieldz
-                )
+        self.variable_def = st.Template(
+            "variable Bmag atom $magnitude\n"+\
+            "variable freq atom $freq\n"+\
+            "variable theta atom $theta\n"+\
+            "variable phi atom $phase\n"+\
+            "\n"+\
+            "variable fieldx atom $fieldx\n"+\
+            "variable fieldy atom $fieldy\n"+\
+            "variable fieldz atom $fieldz\n" ).substitute(
+                    magnitude = self.H_magnitude.magnitude,
+                    freq = self.frequency.magnitude,
+                    theta = self.angle.magnitude,
+                    fieldx = self.fieldx,
+                    fieldy = self.fieldy,
+                    fieldz = self.fieldz,
+                    phase = self.phase.magnitude
+                    )
         
         self
-        self.fix_def = """
-fix 	1 Atoms setdipole v_fieldx v_fieldy v_fieldz %u
-"""%self.multibody_iter
+        self.fix_def = "\nfix 	1 Atoms setdipole v_fieldx v_fieldy v_fieldz %u"%self.multibody_iter
                    

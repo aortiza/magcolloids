@@ -8,23 +8,44 @@ import pandas as pd
 import copy as cp
 from . import ureg
 
-
+ 
 class sim():
     def __init__(self,
         file_name = "test", dir_name = "",stamp_time = False,
         particles = None, traps = None, world = None, field = None,
         timestep = 1e-3*ureg.s, framerate = 30*ureg.Hz, total_time = 60*ureg.s,
         output = ["x", "y", "z"], processors = 1):
-        """ 
+        """
         A sim object contains the parameters defined before. It also requires some extra parameters that define the files in which the simulation scripts and results are stored """
-        
-        
+                
         self.file_name = file_name
         self.dir_name = dir_name
         self.stamp_time = stamp_time
         
         self.particles = particles
-        self.traps = traps
+        
+        # particles can be an array or not, but self.particles must be an array. 
+        # In the lines below, I ensure that self.particles is set from an array
+        try: 
+            # If traps can be indexed, they are a list, and they can be assigned to self.traps
+            particles[0]
+            self.particles=particles
+        except TypeError:
+            # If traps can't be indexed, they are placed inside a list
+            self.particles=[particles]
+        
+        # same thing for traps
+        if not traps is None:
+            try:
+                # If traps can be indexed, they are a list, and they can be assigned to self.traps
+                traps[0]
+                self.traps=traps
+            except TypeError:
+                 # If traps can't be indexed, they are placed inside a list
+                self.traps=[traps]
+        else:
+            self.traps = None
+        
         self.world = world
         self.field = field
         
@@ -34,7 +55,147 @@ class sim():
         
         self.output = output
         self.processors = processors
+    
+    def write_script(self):
+        """ Write the lmpin file"""
+        with open(self.script_name,'w') as f:
+            f.write("### ---preamble--- ###\n")
+            f.write("log %s"%self.log_name)
+            f.write(self.world.world_def)
 
+            f.write("\n### ---Create Particles and Region--- ###\n")
+
+            f.write("read_data "+self.input_name)
+                
+            f.write(self.world.group_def)
+
+            f.write("\n### ---Variables--- ###\n") 
+   
+            f.write("\n## magnetic field\n") 
+            f.write(self.field.variable_def)
+
+            if not self.traps is None:
+                if any([t.velocity is not None for t in self.traps]):
+                    f.write("\n## traps velocities\n") 
+                    for t in self.traps:
+                        f.write(t.velocity)
+
+            if not self.world.ext_force is None:
+                f.write("\n## external force\n") 
+    
+                f.write(self.world.ext_force.calculation)
+    
+            f.write("\n### ---Fixes--- ###\n") 
+
+            f.write(self.field.fix_def)
+            f.write(self.world.integrator_def)
+            f.write(self.world.gravity_def)
+            f.write(self.world.wall_def)
+            f.write(self.world.enforce2d)
+            if not self.traps is None:
+                for t in self.traps:
+                    f.write(t.velocity_fix)
+
+            if not self.world.ext_force is None:
+                f.write(self.world.ext_force.fix_str)
+    
+            f.write(self.run_def)
+
+    def write_input(self):
+        """ Write input file .lmpin"""
+        with open(self.input_name,'w') as f:
+            f.write("This is the initial atom setup of %s"%self.input_name)
+            f.write(self.world.region_def)
+        
+            f.write("\nAtoms\n\n")
+            
+            for p in self.particles:
+                f.write(p.atom_def)
+            
+            if not self.traps is None:
+                is_there_bonds = [t.cutoff == np.Inf*ureg.um for t in self.traps]
+                
+                for t in self.traps:
+                    f.write(t.atom_def)
+        
+                if is_there_bonds:
+                    f.write("\nBonds\n\n")
+                    
+                    for t in self.traps:
+                        if t.cutoff == np.Inf*ureg.um:
+                            f.write(t.bond_def)
+                       
+                    f.write("\nBond Coeffs\n\n")
+                    for t in self.traps:
+                        if t.cutoff == np.Inf*ureg.um:
+                            f.write(t.bond_params)
+                        
+            f.write("\nPairIJ Coeffs\n\n")
+            
+            f.write(self.world.interaction_def)
+        
+            f.write("\n\n")
+    
+    def write_run_def(self):
+        self.run_steps = int(np.round(self.total_time.to(ureg.s)/self.timestep.to(ureg.s)))
+        self.run_def = st.Template("\n" + \
+            "### ---Run Commands--- ###\n" + \
+            "timestep 	$tmstp \n" + \
+            "dump 	3 all custom $sampl $out_name id type $output\n" + \
+            "thermo_style 	custom step atoms\n" + \
+            "thermo 	100  \n" + \
+            "run 	$runtm \n").substitute(out_name = self.output_name,
+                             tmstp = (self.timestep.to(ureg.us)).magnitude,
+                             sampl = int(np.round(
+                                 1/(self.framerate.to(ureg.Hz)*self.timestep.to(ureg.s)))),
+                             runtm = self.run_steps,
+                             output = "\t ".join(self.output))    
+    
+    def distribute_ids(self):
+        """ Gives an id number to all particles and traps. 
+        -------
+        This must be done before generating the strings, to give the correct id to each atom and traps. """
+        
+        atoms_id = 1 # these start at 1 because lammps starts at 1. 
+        atom_type = 1
+    
+        particles = self.particles
+        traps = self.traps
+        try:
+            particles[0]
+        except:
+            particles = [particles]
+
+        if traps is not None:
+            try:
+                traps[0]
+            except:
+                traps = [traps]
+        
+        for p in particles:
+            p.atoms_id = np.array(range(atoms_id, atoms_id + len(p.positions)))
+            p.atom_type = atom_type
+
+            atoms_id += len(p.positions)
+            atom_type += 1
+    
+        if traps is not None:  
+
+            for t in traps:
+                t.traps_id = np.array(range(atoms_id, atoms_id + len(t.positions)))
+                t.atom_type = atom_type
+
+                atoms_id += len(t.positions)
+                atom_type +=1
+
+            for t in traps:
+                t.bond_to_particles()
+
+            bonds_id = 1
+            for t in traps:
+                t.bonds_id = np.array(range(bonds_id,bonds_id + len(t.bonds)))
+                bonds_id += len(t.bonds)
+                                         
     def generate_scripts(self):
         """
         This method generates the input script for the lammps simulation. 
@@ -57,105 +218,27 @@ class sim():
         self.input_name = self.base_name+'.lmpdata'
         self.output_name =  self.base_name+'.lammpstrj'
         self.log_name =  self.base_name+'.log'
-        self.pickle_name =  self.base_name+'.jp'
+        
+        self.distribute_ids()
         
         ### Create strings
-        self.particles.create_string()
+
+        for p in self.particles:
+            p.create_string()
+            
         if not self.traps is None:
-            self.traps.create_string()
+            for t in self.traps:
+                t.create_string()
         
         if not self.world.ext_force is None:
             self.world.ext_force.create_string()
                 
         self.world.create_string()
         self.field.create_string()
-        
-        self.run_steps = int(np.round(self.total_time.to(ureg.s)/self.timestep.to(ureg.s)))
-        
-        self.run_def = st.Template(""" 
-### ---Run Commands--- ###
-timestep 	$tmstp 
-dump 	3 all custom $sampl $out_name id type $output
-thermo_style 	custom step atoms
-thermo 	100  
-run 	$runtm
-                    """).substitute(out_name = self.output_name,
-                             tmstp = (self.timestep.to(ureg.us)).magnitude,
-                             sampl = int(np.round(
-                                 1/(self.framerate.to(ureg.Hz)*self.timestep.to(ureg.s)))),
-                             runtm = self.run_steps,
-                             output = "\t ".join(self.output))
-                             
-                             
-        
-        ### Write script
-        with open(self.script_name,'w') as f:
-            f.write("### ---preamble--- ###\n")
-            f.write("log %s"%self.log_name)
-            f.write(self.world.world_def)
-        
-            f.write("\n### ---Create Particles and Region--- ###\n")
-        
-            f.write("read_data "+self.input_name)
-                        
-            f.write(self.world.group_def)
-        
-            f.write("\n### ---Variables--- ###\n") 
-           
-            f.write("\n## magnetic field\n") 
-            f.write(self.field.variable_def)
-        
-            if not self.traps is None:
-                f.write("\n## traps velocities\n") 
-                f.write(self.traps.velocity)
-        
-            if not self.world.ext_force is None:
-                f.write("\n## external force\n") 
-            
-                f.write(self.world.ext_force.calculation)
-            
-            f.write("\n### ---Fixes--- ###\n") 
-        
-            f.write(self.field.fix_def)
-            f.write(self.world.integrator_def)
-            f.write(self.world.gravity_def)
-            f.write(self.world.wall_def)
-            f.write(self.world.enforce2d)
-            if not self.traps is None:
-                f.write(self.traps.velocity_fix)
-        
-            if not self.world.ext_force is None:
-                f.write(self.world.ext_force.fix_str)
-            
-            f.write(self.run_def)
 
-
-        ### Write input file
-        with open(self.input_name,'w') as f:
-            f.write("This is the initial atom setup of %s"%self.input_name)
-            f.write(self.world.region_def)
-        
-            f.write("\nAtoms\n\n")
-        
-            f.write(self.particles.atom_def)
-            if not self.traps is None:
-                f.write(self.traps.atom_def)
-        
-        
-            if not self.traps is None:
-                if self.traps.cutoff == np.Inf*ureg.um:
-                    f.write("\nBonds\n\n")
-                    f.write(self.traps.bond_def)
-        
-            if not self.traps is None:
-                if self.traps.cutoff == np.Inf*ureg.um:
-                    f.write("\nBond Coeffs\n\n")
-                    f.write(self.traps.bond_params)
-            
-            f.write("\nPairIJ Coeffs\n\n")
-            f.write(self.world.interaction_def)
-        
-            f.write("\n\n")
+        self.write_run_def()                     
+        self.write_script()
+        self.write_input()
                     
     def run(self,verbose = False):
         """This function runs an input script named filename in lammps. The input should be located in target_dir"""

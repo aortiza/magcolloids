@@ -54,7 +54,7 @@ def ordered_dimers(n_of_particles = 150, packing=0.35, height = 4.1, r = 1.4, th
         print("Creating %u particles; %u dimers \n"%(N_particles, N_particles/2))
         print("packing should be", packing)
 
-    a = lambda phi: np.sqrt(8*np.pi/(phi*3**(3/2)))
+    a = lambda phi: np.sqrt(6*np.pi/(phi*3**(3/2)))
     
     if verbose:
         print("The lattice constant is a = %2.3f"%a(packing))
@@ -102,7 +102,7 @@ def ordered_dimers(n_of_particles = 150, packing=0.35, height = 4.1, r = 1.4, th
         print("The region is ", region)
         print(len(positions)," positions created")
         region_a = region[0]*region[1]
-        partic_a = 4/3*np.pi*r**2*len(positions)
+        partic_a = np.pi*r**2*len(positions)
         print("packing is actually %2.2f/%2.2f = %2.2f"%(partic_a,region_a,partic_a/region_a))
 
     return region, positions
@@ -173,7 +173,7 @@ def hexagonal_order(n_of_particles = 150, packing=0.35, height = 4.1, r = 1.4, t
 
     return region, positions
 	
-def animate_trj(trj, sim = None, region = None, radius = None,framerate = None, ax=False, verb=False, start=0, end=False, step = 1, speedup = 1, preserve_limits = False):
+def animate_trj(trj, sim = None, region = None, radius = None, framerate = None, ax=False, verb=False, start=0, end=False, step = 1, speedup = 1, preserve_limits = False, time_index = "frame", color_field = "z", color_label='$z [\mu{m}]$', clim = None, cmap = None):
     """
     This function animates the trajectory resulting from a confined dimer simulation. It displays the z direction as a colormap and the particles in the x and y direction. The simulation is required as argument to obtain parameters like the region size and the particles radius.
     Optional parameters are:
@@ -183,6 +183,8 @@ def animate_trj(trj, sim = None, region = None, radius = None,framerate = None, 
     * step = 1. The framerate, so to speak. 
     * verb = False. If verb = True, the routine prints indicators that is running. 
     * speedup allows us to do faster videos. Default is 1, which means normal ratio.
+    todo:
+    Fix for bidisperse particles. Take draw_trj as example. 
     """
     
     from mpl_toolkits.axes_grid1 import make_axes_locatable
@@ -190,17 +192,32 @@ def animate_trj(trj, sim = None, region = None, radius = None,framerate = None, 
     idx = pd.IndexSlice
     
     if not ax:
-        fig, ax = plt.subplots(1,1,figsize=(7,7))
-    else: 
-        fig = ax.figure
+        ax = plt.gca()
+    fig = ax.figure
         
     if sim is not None:
         region = [r.magnitude for r in sim.world.region]
-        radius = sim.particles.radius.magnitude 
+        radius = [p.radius.magnitude for p in sim.particles]
         framerate = sim.framerate.magnitude
         #runtime = sim.total_time.magnitude
         timestep = sim.timestep.magnitude
 
+    if cmap is None:
+        cmap = plt.cm.RdBu
+        
+    try: 
+        radius[0]
+    except (AttributeError, TypeError):
+        radius = [radius]
+    
+    has_type = True    
+    if ("type" not in trj.columns):
+        if (len(radius)==1):
+            tp = 0
+            has_type = False
+        else:
+            raise(ValueError("trj should include a type column to use an array of radius values"))
+            
     particles = trj.index.get_level_values('id').unique()
     n_of_particles = len(trj.index.get_level_values('id').unique())
 
@@ -208,18 +225,21 @@ def animate_trj(trj, sim = None, region = None, radius = None,framerate = None, 
     
     #dt_data = np.round(1/(timestep*framerate)) # Data timestep in lammps_time
     
-    frames = trj.index.get_level_values('frame').unique().values
+    frames = trj.index.get_level_values(time_index).unique().values
+    
+    time = np.arange(len(frames))/framerate
     
     if not end:
-        end = frames[-1]/framerate
+        end = time[-1]
     
-    frame_id_min=np.uint(start*framerate)
-    frame_id_max=np.uint(end*framerate)
+    frame_id_min=np.argmin(np.abs(time-start))
+    frame_id_max=np.argmin(np.abs(time-end))
     
     trj = trj.loc[idx[frames[frame_id_min:frame_id_max:step],:]]
-    frames = trj.index.get_level_values('frame').unique().values
+    frames = trj.index.get_level_values(time_index).unique().values
+    
     #dt_video = np.mean(np.diff(frames))*timestep*1000/speedup # video timestep in miliseconds
-    dt_video = 1000/framerate/speedup # video timestep in miliseconds
+    dt_video = 1000/framerate/speedup*step # video timestep in miliseconds
     
     if not preserve_limits:
     
@@ -231,16 +251,23 @@ def animate_trj(trj, sim = None, region = None, radius = None,framerate = None, 
     
     patches = []
     for i,p in enumerate(particles):
-        c = plt.Circle((0, 0), radius)
+        if has_type:
+            tp = int(trj.loc[idx[frames[0],p],'type'])-1
+            
+        c = plt.Circle((0, 0), radius[tp])
         patches.append(c)
 
-    p = clt.PatchCollection(patches, cmap=plt.cm.RdBu)
+    p = clt.PatchCollection(patches, cmap=cmap)
     p.set_array(np.zeros(0))
-    p.set_clim([region[4]+radius,region[5]-radius])
+    
+    if clim is None:
+        clim = [region[4]+radius,region[5]-radius]
+    
+    p.set_clim(clim)
     
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size="5%", pad=0)
-    plt.colorbar(p,label='$z [\mu{m}]$',cax=cax)
+    plt.colorbar(p,label=color_label,cax=cax)
 
     def init():
         ax.add_collection(p)
@@ -265,7 +292,7 @@ def animate_trj(trj, sim = None, region = None, radius = None,framerate = None, 
             patches[part_id+len(particles_in)].center = [2*region[0],2*region[2]]
         
         p.set_paths(patches)
-        p.set_array(trj.loc[idx[frames[frame],:],'z'].values)
+        p.set_array(trj.loc[idx[frames[frame],:],color_field].values)
         ax.add_collection(p)
         return p,
     
@@ -280,24 +307,43 @@ def animate_trj(trj, sim = None, region = None, radius = None,framerate = None, 
 
     return anim
 
-def draw_trj(trj,sim = None, region = None, radius = None, iframe=-1,ax=False):
+def draw_trj(trj,sim = None, region = None, radius = None, iframe=-1, ax=False, time_index = "frame", color_field = "z", color_label='$z [\mu{m}]$', clim = None, cmap = None):
     from mpl_toolkits.axes_grid1 import make_axes_locatable
     """ 
     displays a trajectory statically. 
     If iframe is given, it displays particles in the frame specified by the index iframe. 
     If it isn't given, then it displays the last frame
+    
     """
     if not ax:
-        fig, ax = plt.subplots(1,1,figsize=(7,7))
+        ax = plt.gca()
     
     if sim is not None:
         region = [r.magnitude for r in sim.world.region]
-        radius = sim.particles.radius.magnitude 
+        radius = [p.radius.magnitude for p in sim.particles]
 
+    try: 
+        radius[0]
+    except (AttributeError, TypeError):
+        radius = [radius]
+    
+    has_type = True    
+    if ("type" not in trj.columns):
+        if (len(radius)==1):
+            tp = 0
+            has_type = False
+        else:
+            raise(ValueError("trj should include a type column to use an array of radius values"))
+     
+    if clim is None:
+        clim = [region[4]+radius,region[5]-radius]
+    if cmap is None:
+        cmap = plt.cm.RdBu
+        
     idx = pd.IndexSlice
     particles = trj.index.get_level_values('id').unique()
     n_of_particles = len(trj.index.get_level_values('id').unique())
-    frames = trj.index.get_level_values('frame').unique()
+    frames = trj.index.get_level_values(time_index).unique()
     
     ax.set_xlim(region[0],region[1])
     ax.set_ylim(region[2],region[3])
@@ -306,30 +352,32 @@ def draw_trj(trj,sim = None, region = None, radius = None, iframe=-1,ax=False):
     ax.set_ylabel("$y [\mu{m}]$")
     
     patches = []
-    print(frames,iframe)
+
     for i,p in enumerate(particles):
+        if has_type:
+            tp = int(trj.loc[idx[frames[iframe],p],'type'])-1
+
         c = plt.Circle(
-            (trj.loc[idx[frames[iframe],p],'x'],trj.loc[idx[frames[iframe],p],'y']), radius)
+            (trj.loc[idx[frames[iframe],p],'x'],trj.loc[idx[frames[iframe],p],'y']), radius[tp])
         patches.append(c)
 
-    p = clt.PatchCollection(patches, cmap=plt.cm.RdBu)
-    p.set_array(trj.loc[idx[frames[iframe],:],'z'].values)
-    p.set_clim([region[4]+radius,region[5]-radius])
+    p = clt.PatchCollection(patches, cmap=cmap)
+    p.set_array(trj.loc[idx[frames[iframe],:],color_field].values)
+    p.set_clim(clim)
+    
     ax.add_collection(p)
             
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size="5%", pad=0)
-    plt.colorbar(p,label='$z [\mu{m}]$',cax=cax)
+    plt.colorbar(p,label=color_label,cax=cax)
 
     return ax
     
-def display_animation_direct(sim,*args,**kargs):
+def display_animation_direct(sim=None,trj=None,**kargs):
 
-    if len(args)<1:
+    if trj is None:
         trj = sim.load(read_trj=True)
         print("reading"+args)
-    else: 
-        trj = args[0]
 
     anim = animate_trj(trj,sim,**kargs)
     return anim.to_html5_video()
