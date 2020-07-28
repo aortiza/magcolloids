@@ -245,7 +245,7 @@ class trj_lazyread():
     def __getitem__(self, sliced):
         return self.read_trj(sliced)
     
-    def get_bounds(self,*args):
+    def get_bounds(self,sl=None):
         
         def bound_to_vector(T,frame):
             values = np.array([b for k in T[frame]["bounds"].keys() for b in T[frame]["bounds"][k]])
@@ -253,8 +253,8 @@ class trj_lazyread():
             return pd.DataFrame([values],columns=names,index=[frame])
                     
         frames = np.sort(np.array(list(self.T.keys())))
-        if len(args)>0:
-            frames = frames[args[0]]
+        if sl is not None:
+            frames = frames[sl]
         data = pd.concat([bound_to_vector(self.T,frame) for frame in frames])
         data.index.name = "frame"
         return data
