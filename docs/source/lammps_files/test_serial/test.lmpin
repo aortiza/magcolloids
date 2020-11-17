@@ -1,0 +1,43 @@
+### ---preamble--- ###
+log lammps_files/test_serial/test.log
+units micro
+atom_style hybrid sphere paramagnet bond
+boundary p p f
+
+neighbor 4.0 nsq
+pair_style hybrid lj/cut/dipole/cut 1 20
+bond_style biharmonic
+
+### ---Create Particles and Region--- ###
+read_data lammps_files/test_serial/test.lmpdata
+group Atoms type 1
+mass * 1
+
+### ---Variables--- ###
+
+## magnetic field
+
+variable Bmag atom 1.3307269489288908e-05
+variable freq atom 9.999999999999999e-06
+variable theta atom 0.2617993877991494
+
+variable fieldx atom v_Bmag*sin(v_freq*time*2*PI)*sin(v_theta)
+variable fieldy atom v_Bmag*cos(v_freq*time*2*PI)*sin(v_theta)
+variable fieldz atom v_Bmag*cos(v_theta)
+
+### ---Fixes--- ###
+
+fix 	1 Atoms setdipole v_fieldx v_fieldy v_fieldz 0
+
+fix 	2 Atoms bd 300 0.001 818015 
+
+fix     3 Atoms addforce 0 0 -0.00011264159515495175
+fix 	6 Atoms wall/lj126 zlo EDGE 0.01 1.247258205396475  1.4 zhi EDGE 0.01 1.247258205396475  1.4  
+ 
+### ---Run Commands--- ###
+timestep 	100.0 
+dump 	3 all custom 333 lammps_files/test_serial/test.lammpstrj id type x	 y	 z
+thermo_style 	custom step atoms
+thermo 	100  
+run 	600000
+                    
