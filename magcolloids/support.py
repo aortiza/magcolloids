@@ -336,7 +336,7 @@ def draw_trj(trj,sim = None, region = None, radius = None, iframe=-1, ax=False, 
             raise(ValueError("trj should include a type column to use an array of radius values"))
      
     if clim is None:
-        clim = [region[4]+radius,region[5]-radius]
+        clim = [region[4]+min(radius),region[5]-min(radius)]
     if cmap is None:
         cmap = plt.cm.RdBu
         

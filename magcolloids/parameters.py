@@ -135,10 +135,17 @@ class bistable_trap():
             
         except AttributeError:
             # this happens if particles is an array
-            self.bonds = np.concatenate([p.atoms_id[s] for p,s in zip(self.particles,self.subsets)])
-            self.bonded_atom_type = np.concatenate([p.atom_type + np.zeros(len(p.atoms_id[s])) 
-                                                        for p,s in zip(self.particles,self.subsets)])
             
+            # self.bonds should be an array that contains those atoms to which this trap is bonded. 
+            # This is calculated from a subset array which is input to the trap type. 
+            
+            atom_id = lambda s: self.particles[s[0]].atoms_id[s[1]]
+            atom_type = lambda s: self.particles[s[0]].atom_type
+            
+            self.bonds = np.array([atom_id(s) for s in self.subsets])
+            
+            self.bonded_atom_type = np.concatenate([atom_type(s) + np.zeros(len(self.particles[s[0]].atoms_id)) for s in self.subsets])
+        
     def create_string(self):
         
         # We first define the string pattern that defines a single trap

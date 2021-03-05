@@ -60,18 +60,27 @@
         
         <span class="bp">self</span><span class="o">.</span><span class="n">particles</span> <span class="o">=</span> <span class="n">particles</span>
         
-        <span class="k">if</span> <span class="n">particles</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;particles&quot;</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">particles</span><span class="o">=</span><span class="p">[</span><span class="n">particles</span><span class="p">]</span>
-        <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># particles can be an array or not, but self.particles must be an array. </span>
+        <span class="c1"># In the lines below, I ensure that self.particles is set from an array</span>
+        <span class="k">try</span><span class="p">:</span> 
+            <span class="c1"># If traps can be indexed, they are a list, and they can be assigned to self.traps</span>
+            <span class="n">particles</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">particles</span><span class="o">=</span><span class="n">particles</span>
+        <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
+            <span class="c1"># If traps can&#39;t be indexed, they are placed inside a list</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">particles</span><span class="o">=</span><span class="p">[</span><span class="n">particles</span><span class="p">]</span>
         
+        <span class="c1"># same thing for traps</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">traps</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">particles</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;bistable_trap&quot;</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">traps</span><span class="o">=</span><span class="p">[</span><span class="n">traps</span><span class="p">]</span>
-            <span class="k">else</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="c1"># If traps can be indexed, they are a list, and they can be assigned to self.traps</span>
+                <span class="n">traps</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">traps</span><span class="o">=</span><span class="n">traps</span>
+            <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
+                 <span class="c1"># If traps can&#39;t be indexed, they are placed inside a list</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">traps</span><span class="o">=</span><span class="p">[</span><span class="n">traps</span><span class="p">]</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">traps</span> <span class="o">=</span> <span class="n">traps</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">traps</span> <span class="o">=</span> <span class="kc">None</span>
         
         <span class="bp">self</span><span class="o">.</span><span class="n">world</span> <span class="o">=</span> <span class="n">world</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">field</span> <span class="o">=</span> <span class="n">field</span>
@@ -355,7 +364,7 @@
     <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sliced</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_trj</span><span class="p">(</span><span class="n">sliced</span><span class="p">)</span>
     
-    <span class="k">def</span> <span class="nf">get_bounds</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">*</span><span class="n">args</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">get_bounds</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">sl</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         
         <span class="k">def</span> <span class="nf">bound_to_vector</span><span class="p">(</span><span class="n">T</span><span class="p">,</span><span class="n">frame</span><span class="p">):</span>
             <span class="n">values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">b</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">T</span><span class="p">[</span><span class="n">frame</span><span class="p">][</span><span class="s2">&quot;bounds&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">T</span><span class="p">[</span><span class="n">frame</span><span class="p">][</span><span class="s2">&quot;bounds&quot;</span><span class="p">][</span><span class="n">k</span><span class="p">]])</span>
@@ -363,8 +372,8 @@
             <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">([</span><span class="n">values</span><span class="p">],</span><span class="n">columns</span><span class="o">=</span><span class="n">names</span><span class="p">,</span><span class="n">index</span><span class="o">=</span><span class="p">[</span><span class="n">frame</span><span class="p">])</span>
                     
         <span class="n">frames</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">keys</span><span class="p">())))</span>
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
-            <span class="n">frames</span> <span class="o">=</span> <span class="n">frames</span><span class="p">[</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+        <span class="k">if</span> <span class="n">sl</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">frames</span> <span class="o">=</span> <span class="n">frames</span><span class="p">[</span><span class="n">sl</span><span class="p">]</span>
         <span class="n">data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">bound_to_vector</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">T</span><span class="p">,</span><span class="n">frame</span><span class="p">)</span> <span class="k">for</span> <span class="n">frame</span> <span class="ow">in</span> <span class="n">frames</span><span class="p">])</span>
         <span class="n">data</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;frame&quot;</span>
         <span class="k">return</span> <span class="n">data</span>

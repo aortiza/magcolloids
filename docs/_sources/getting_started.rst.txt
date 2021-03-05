@@ -15,5 +15,5 @@ Walkthrough
    
    BidisperseSimulations
 
-todo: 
+to do: 
 There is nothing explaining how regular traps work
