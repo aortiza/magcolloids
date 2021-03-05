@@ -1,0 +1,418 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "A version of this should be written for magcolloids"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# Forces in the simulation"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "The simulation part of 'icenumerics' is done through the 'magcolloids' package, which works as a wrapper of the molecular dynamics program [LAMMPS](https://lammps.sandia.gov/doc/Manual.html). In molecular dynamics, the equations of motion of all particles are solved by discretizing them, and applying a velocity verlet algorithm. The equations of motion are given by Newton's equation: \n",
+    "$$m_i\\ddot{\\vec{x_i}} = \\vec{F_i}$$"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Brownian Dynamics\n",
+    "The 'icenumerics' and 'magcolloids' packages use a modified version of LAMMPS, to instead run Brownian dynamics. In Brownian dynamics, particles are assumed to be immersed in a high Reynolds number fluid, so that:\n",
+    "* A viscous drag force is included in the force balance, which is proportional to the velocity $F_{i,drag} = -\\gamma\\dot{\\vec{x_i}}$. \n",
+    "* This viscous force is assumed to be much larger than the inertial term $m_i\\vec{\\ddot{x_i}}$, so the later can be neglected.\n",
+    "* Particles are subjected to random kicks from the fluid. These are given by a Langevin thermostat which is a random variable $\\eta$ such that $\\left<\\eta\\right> = 0$ and $\\left<\\eta_i(t+\\Delta t)\\eta_j(t)\\right> = 2k_BT\\gamma\\delta({i-j})\\delta({\\Delta t})$, where $\\delta$ is the Dirac delta function.\n",
+    "\n",
+    "The result from these assumptions is that the force balance can be written:\n",
+    "$$\\gamma\\dot{\\vec{x_i}} = \\vec{F_i} + \\eta$$\n",
+    "which can be discretized as:\n",
+    "$$\\Delta{\\vec{x_i}} = \\frac{\\Delta t}{\\gamma}\\vec{F_i} + \\sqrt{\\Delta t 2k_BT\\gamma}N[0,1]$$ \n",
+    "where $N[0,1]$ is a Gaussian distributed random variable with zero mean and unitary variance. \n",
+    "This is the equation that is used to solve the trajectories of particles."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Available Forces "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# This only adds the package to the path.\n",
+    "import os\n",
+    "import sys \n",
+    "sys.path.insert(0, '../../../')\n",
+    "\n",
+    "import magcolloids as mgc\n",
+    "import numpy as np\n",
+    "\n",
+    "import matplotlib.pyplot as plt\n",
+    "%load_ext autoreload\n",
+    "%autoreload 2"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "There are two components that are fundamental to Colloidal Ice: the trapping force and the interaction force. "
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Trapping Force"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Colloidal Ice consists of colloidal particles confined to a bistable potential, so that particles can jump from one stability position to another in a way that minimizes the energy of the system. The potential used by the 'icenumerics' package is a bi-harmonic potential, defined by:\n",
+    "\n",
+    "$$\n",
+    "F = -k r_{\\perp} \\hat{e}_{\\perp} + \\hat{e}_{||}\n",
+    "\\begin{cases}\n",
+    "k \\left(|r_{||}|-d/2\\right) \\mathrm{sign}\\left(r_{||}\\right) & r_{||}<d/2 \\\\\n",
+    "h r_{||} & r_{||}>d/2\n",
+    "\\end{cases}\n",
+    "$$\n",
+    "\n",
+    "where $r_{||}$ is the component parallel to the direction of the trap, and $r_{\\perp}$ is the perpendicular component, $\\hat{e}_{||}$ is the unit vector in the direction of the trap, $\\hat{e}_{||}$ a vector pointing away from the line that joins both stable points, $k$ is the trap stiffness, $d$ is the distance between centers, and $h$ is the stiffness of the central hill. \n",
+    "\n",
+    "#### A note on the stiffness of the central hill. \n",
+    "Currently (v0.1.7) the stiffness of the central hill is given in $pN \\mu{}m$. This is a mistake in how the quantity is introduced to lammps. The stiffness should be given instead in $pN/\\mu{}m$. \n",
+    "This will be fixed in the next release, so that the quantity 'height' actually gives the height of the central hill, in $pN \\mu{}m$ (energy units). The old behaviour should be mantained by using stiffness units ($pN/\\mu{}m$)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "This expression can be checked by allowing a particle to diffuse thermally through a trap, and observing its probability distribution. To do this, we run a single particle on a single trap. "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "image/png": "iVBORw0KGgoAAAANSUhEUgAAAXwAAABsCAYAAABpRgnlAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAALEgAACxIB0t1+/AAAADh0RVh0U29mdHdhcmUAbWF0cGxvdGxpYiB2ZXJzaW9uMy4xLjEsIGh0dHA6Ly9tYXRwbG90bGliLm9yZy8QZhcZAAAJ50lEQVR4nO3dXYwV9R3G8e9TQY2UNq2Lr4hLK73ApmKzkjRaI7FRMK3URhK8qKRiqI0mbeyFWhM1emHfNUGt2kAUolhfaiUFX9A2Wi+q7CpUltV2Ra0IUSitr6hZ++vFmcXTdc7u2Z3ZnTlnnk+y2Tkzf+b/MBl+GX5nzhlFBGZm1v4+VXQAMzObGC74ZmYV4YJvZlYRLvhmZhXhgm9mVhEu+GZmFTGp6ADD6ejoiM7OzqJjmJm1jJ6ent0RMS1tW6kLfmdnJ93d3UXHMDNrGZJeabTNLR0zs4pwwTczqwgXfDOzinDBNzOrCBd8M7OKcME3M6sIF3wzs4pwwTczqwgXfDOzinDBNzOrCBd8M7OKyFzwJR0l6c+S+iT1SvphyphTJL0paVPyc0XWec3MbHTy+PK0AeDHEfGMpKlAj6QNEbF1yLi/RMQ3c5jPzMzGIPMVfkTsjIhnkuW3gT7gyKz7NbP8XXkl9PYWncKKkmsPX1IncDzwVMrmr0naLOlBScfmOa+ZNWfrVpg7F1auLDqJFSG3gi/p08B9wI8i4q0hm58Bjo6I44DlwB+G2c8ySd2Sunft2pVXPDNLvPceLF0KS5bAu+8WncYmUi4FX9JkasX+joj4/dDtEfFWRLyTLK8HJkvqSNtXRNwaEV0R0TVtWupDW8wsB6tWwQknuMVTJXncpSNgBdAXEb9uMOawZByS5ibz/ivr3GaWTV+fWzxVksddOicC3wWek7QpWfcTYAZARNwMnA38QNIAsBdYHBGRw9xmltFgi+fxx+Gmm2DKlKIT2XjJXPAj4klAI4y5Abgh61xmNn5WrYKNG+Gee+BY31bRlvxJWzPbxy2e9uaCb2b/x3fxtC8XfDNL5bt42o8Lvpk15BZPe3HBN7NhucXTPlzwzawpbvG0Phd8M2uaWzytzQXfzEZlsMVz7rlu8bSaPD5pay3s+efhlluKTmETZfPm/Pa1ejV0d/uDWq3EBb/iXnoJrr++6BTWqgZbPMuXw3nnFZ3GRuKWjpll4hZP63DBN7NcrF5du4tny5aik1gjLvhmlpvBFs+KFUUnsTR5PQBlvqQXJPVLujRl+wGSfpdsfyp5FKKZtaG9e+H8893iKaM8HoCyH3AjsACYDZwjafaQYUuBf0fEMcB1wM+yzmtm5eYWT/nkcYU/F+iPiG0R8SFwF7BwyJiFwO3J8r3AqYNPwDKz9uUWT7nkUfCPBF6te709WZc6JiIGgDeBg9N25oeYm7WXvXvhvvtqd/NYsfIo+GlX6kMfX9jMmNpKP8TcrG1MmgTXXgvr1sFBBxWdxvL44NV24Ki619OBHQ3GbJc0CfgssCeHuc2spKZPhzVr4KSTik5ig/K4wt8IzJI0U9L+wGJg7ZAxa4ElyfLZwJ/8EHOz9rVgATz7rIt92WQu+ElP/iLgYaAPuDsieiVdLenMZNgK4GBJ/cDFwCdu3TSz1lffwunoKDqNDZXLd+lExHpg/ZB1V9Qtvw8symMuMysnt3DKz5+0NbPM3MJpDf62zIo78EA44oiiU9hE2bMH3n8/v/1NmgTXXAOXXAL+ZE35ueBX3Lx58NprRaewibJoEdx7bz77cgun9bilY2aj5hZOa3LBN7Om+S6c1uaWjpk1xS2c1ucrfDMbkVs47cEF38wacgunvbilY2ap3MJpP77CN7NPcAunPbngm9k+buG0N7d0zAxwC6cKMhV8Sb8AvgV8CLwIfC8i/pMy7mXgbeAjYCAiurLMa2b5WrAAVq3yVX27y9rS2QB8OSK+AvwduGyYsfMiYo6LvVl5uIVTLZmu8CPikbqXf6X2cBMzawFu4VRPnm/angc82GBbAI9I6pG0LMc5zWwMfBdONY14hS/pUeCwlE2XR8QDyZjLgQHgjga7OTEidkg6BNgg6fmIeKLBfMuAZQAzZsxo4q9gZs2aPLnWwvHXGVeTsj5aVtIS4ALg1Ih4r4nxVwHvRMQvRxrb1dUV3d3dmfKZ2cd273avvt1J6mn0Xmmmlo6k+cAlwJmNir2kKZKmDi4DpwFbssxrZmPjYl9tWXv4NwBTqbVpNkm6GUDSEZIGn3F7KPCkpM3A08C6iHgo47xmZjZKWe/SOabB+h3AGcnyNuC4LPOYmVl2/moFM7OKcME3M6sIF3wzs4pwwTczqwgXfDOzinDBNzOrCBd8M7OKcME3M6sIF3wzs4pwwTczqwgXfDOzinDBNzOriMzfhz+eJO0CXik6R4oOYHfRIZrkrOPDWceHs2Z3dERMS9tQ6oJfVpK6W+Vh7M46Ppx1fDjr+HJLx8ysIlzwzcwqwgV/bG4tOsAoOOv4cNbx4azjyD18M7OK8BW+mVlFuOCPgqRFknol/VdSV936Tkl7kwe573uYe5EaZU22XSapX9ILkk4vKmMaSVdJeq3uWJ5RdKZ6kuYnx61f0qVF5xmJpJclPZccy+6i89STtFLSG5K21K37vKQNkv6R/P5ckRmTTGk5S32eNuKCPzpbgO8AT6RsezEi5iQ/F0xwrjSpWSXNBhYDxwLzgZsk7Tfx8YZ1Xd2xXF90mEHJcboRWADMBs5JjmfZzUuOZdluIbyN2jlY71LgsYiYBTyWvC7abXwyJ5T0PB2OC/4oRERfRLxQdI5mDJN1IXBXRHwQES8B/cDciU3XsuYC/RGxLSI+BO6idjxtDCLiCWDPkNULgduT5duBb09oqBQNcrYkF/z8zJT0rKTHJX296DDDOBJ4te719mRdmVwk6W/Jf6UL/y99nVY4dkMF8IikHknLig7ThEMjYidA8vuQgvMMp6znaUMu+ENIelTSlpSf4a7kdgIzIuJ44GLgTkmfKWlWpayb0Fu1Rsj9G+CLwBxqx/VXE5ltBIUfuzE4MSK+Sq0NdaGkk4sO1CbKfJ42NKnoAGUTEd8Yw5/5APggWe6R9CLwJWBc3yQbS1ZqV6VH1b2eDuzIJ1Fzms0t6bfAH8c5zmgUfuxGKyJ2JL/fkHQ/tbZU2ntQZfG6pMMjYqekw4E3ig6UJiJeH1wu4XnakK/wcyBp2uAbn5K+AMwCthWbqqG1wGJJB0iaSS3r0wVn2if5Rz7oLGpvPpfFRmCWpJmS9qf25vfagjM1JGmKpKmDy8BplOt4plkLLEmWlwAPFJiloZKfpw35Cn8UJJ0FLAemAeskbYqI04GTgaslDQAfARdERKFv8jTKGhG9ku4GtgIDwIUR8VGRWYf4uaQ51FolLwPfLzbOxyJiQNJFwMPAfsDKiOgtONZwDgXulwS1f+t3RsRDxUb6mKQ1wClAh6TtwJXAT4G7JS0F/gksKi5hTYOcp5T1PB2OP2lrZlYRbumYmVWEC76ZWUW44JuZVYQLvplZRbjgm5lVhAu+mVlFuOCbmVWEC76ZWUX8DyhoQlCX/tIIAAAAAElFTkSuQmCC\n",
+      "text/plain": [
+       "<Figure size 432x288 with 1 Axes>"
+      ]
+     },
+     "metadata": {
+      "needs_background": "light"
+     },
+     "output_type": "display_data"
+    }
+   ],
+   "source": [
+    "ureg = ice.ureg\n",
+    "sp = ice.spins(centers = np.array([[0,0,0]])*ureg.um, \n",
+    "               directions = np.array([[30,0,0]])*ureg.um, \n",
+    "               lattice_constant=10*ureg.um)\n",
+    "sp.display()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 3,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "particle = ice.particle(radius = 1*ureg.um,\n",
+    "             susceptibility = 0,\n",
+    "             diffusion = 0.145*ureg.um**2/ureg.s,\n",
+    "             temperature = 300*ureg.K)\n",
+    "\n",
+    "trap = ice.trap(trap_sep = 2*ureg.um,\n",
+    "               height = 16*ureg.pN*ureg.nm,\n",
+    "               stiffness = 1*ureg.fN/ureg.nm)\n",
+    "\n",
+    "col = ice.colloidal_ice(sp, particle, trap, height_spread = 0, susceptibility_spread = 0)\n",
+    "col.pad_region(3*ureg.um)\n",
+    "\n",
+    "world = ice.world(\n",
+    "    field = 0*ureg.mT,\n",
+    "    temperature = 300*ureg.K,\n",
+    "    dipole_cutoff = 200*ureg.um)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "By adding the forces to the simulation's output, we can compare them to the expected function."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "[<icenumerics.magcolloids.magcolloids.parameters.particles object at 0x81dec1ba8>]\n"
+     ]
+    }
+   ],
+   "source": [
+    "%%time \n",
+    "col.simulation(world,\n",
+    "             name = \"test\",\n",
+    "             include_timestamp = False,\n",
+    "             targetdir = r\".\",\n",
+    "             framerate = 10*ureg.Hz,\n",
+    "             timestep = 1000*ureg.us,\n",
+    "             run_time = 10000*ureg.s,\n",
+    "             output = [\"x\",\"y\",\"z\",\"fx\",\"fy\",\"fz\"])\n",
+    "\n",
+    "col.run_simulation()\n",
+    "col.load_simulation()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "fig, ax = plt.subplots(1,3,figsize=(9,2),dpi=150)\n",
+    "\n",
+    "col.display(ax = ax[0])\n",
+    "ax[0].plot(col.trj[col.trj.type==1].x, col.trj[col.trj.type==1].y)\n",
+    "\n",
+    "ax[1].hist(col.trj[col.trj.type==1].x, bins=20, density=True);\n",
+    "ax[1].set_xlabel(\"x\")\n",
+    "ax[1].set_xlabel(\"P(x)\")\n",
+    "ax[2].hist(col.trj[col.trj.type==1].y, bins=20, density=True);\n",
+    "ax[1].set_xlabel(\"x\")\n",
+    "ax[1].set_xlabel(\"P(y)\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Below we define the energy of the bistable trap and it's force. Notice the change in the units of $h$."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "k = col[0].trap.stiffness\n",
+    "d = col[0].trap.trap_sep\n",
+    "h = col[0].trap.height.to(\"pN um\").magnitude*ureg(\"pN/um\") \n",
+    "kB = 1.38064852e-23*ureg.J/ureg.K\n",
+    "\n",
+    "def bistable_trap(x,y):\n",
+    "    \n",
+    "    Uy = (k*y**2/2).to(\"pN nm\")\n",
+    "    \n",
+    "    \n",
+    "    Ux = (d**2*h/8-h*x**2/2).to(\"pN nm\")\n",
+    "    Ux1 = (k * (abs(x)-d/2)**2 / 2).to(\"pN nm\")\n",
+    "\n",
+    "    Ux[abs(x)>(d/2)] = Ux1[abs(x)>(d/2)]\n",
+    "    \n",
+    "    return Ux+Uy"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "fig, ax = plt.subplots(1,2,figsize=(6,2),dpi=150)\n",
+    "\n",
+    "## parallel dependence\n",
+    "[p, x] = np.histogram(col.trj[col.trj.type==1].x, bins = 20, density=True)\n",
+    "ax[0].plot(x[1:]-np.diff(x)/2, max(np.log(p))-np.log(p), label=\"log(P(x))\")\n",
+    "\n",
+    "x = np.linspace(min(x),max(x),1000) * ureg.um\n",
+    "y = np.array([0])*ureg.um\n",
+    "T = col.sim.world.temperature\n",
+    "\n",
+    "ax[0].plot(x.magnitude, (bistable_trap(x,y)/(kB*T)).to(\" \").magnitude, label=\"U(x)/$k_BT$\")\n",
+    "ax[0].set_xlabel(\"x\")\n",
+    "ax[0].legend()\n",
+    "\n",
+    "## perpendicular dependence\n",
+    "[p, y] = np.histogram(col.trj[col.trj.type==1].y, bins = 20, density=True)\n",
+    "ax[1].plot(y[1:]-np.diff(y)/2, max(np.log(p))-np.log(p),label=\"log(P(y))\")\n",
+    "\n",
+    "x = np.array([d.magnitude/2])*d.units\n",
+    "y = np.linspace(min(y),max(y),1000) * ureg.um\n",
+    "T = col.sim.world.temperature\n",
+    "\n",
+    "ax[1].plot(y.magnitude, (bistable_trap(x,y)/(kB*T)).to(\" \").magnitude,label=\"U(y)/$k_BT$\")\n",
+    "ax[0].set_xlabel(\"y\")\n",
+    "ax[1].legend()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "We can also compare directly to the forces calculated inside lammps:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "def bistable_trap_force(x,y):\n",
+    "    \n",
+    "    Fx1 = -np.sign(x.magnitude)*(abs(x)-d/2)*k\n",
+    "    Fx = x*h\n",
+    "    \n",
+    "    Fx[abs(x)>(d/2)] = Fx1[abs(x)>(d/2)]\n",
+    "    \n",
+    "    Fy = -y*k\n",
+    "    \n",
+    "    Fx = Fx.to(\"pN\")\n",
+    "    Fy = Fy.to(\"pN\")\n",
+    "\n",
+    "    return Fx, Fy"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "fig, ax = plt.subplots(1,2,figsize=(6,2),dpi=150, sharey=True)\n",
+    "forces = col.trj[col.trj.type==1]\n",
+    "forces = forces.sort_values(by=\"x\")\n",
+    "\n",
+    "x = forces.x\n",
+    "y = forces.y\n",
+    "\n",
+    "fx = forces.fx * (1*ureg.pg*ureg.um/ureg.us**2).to(ureg.pN).magnitude\n",
+    "fy = forces.fy * (1*ureg.pg*ureg.um/ureg.us**2).to(ureg.pN).magnitude\n",
+    "\n",
+    "ax[0].plot(x,fx,linewidth = 2)\n",
+    "ax[1].plot(y,fy,linewidth = 2)\n",
+    "\n",
+    "Fx, Fy = bistable_trap_force(x.values*ureg.um, y.values*ureg.um)\n",
+    "\n",
+    "ax[0].plot(x, Fx.magnitude,linewidth = 1)\n",
+    "ax[0].set_xlabel(\"x\")\n",
+    "\n",
+    "ax[1].plot(y,Fy.magnitude,linewidth = 1)\n",
+    "ax[1].set_xlabel(\"y\")\n",
+    "ax[0].set_ylabel(\"Force [pN]\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# Force after fixing the error with the height:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "k = col[0].trap.stiffness\n",
+    "d = col[0].trap.trap_sep\n",
+    "h = col[0].trap.height.to(\"pN nm\").magnitude*ureg(\"pN/nm\")\n",
+    "kB = 1.38064852e-23*ureg.J/ureg.K\n",
+    "\n",
+    "def bistable_trap(x,y):\n",
+    "    \n",
+    "    Uy = (k*y**2/2).to(\"pN nm\")\n",
+    "    \n",
+    "    Ux = (h*(1-4 * (x)**2/d**2)).to(\"pN nm\")\n",
+    "    Ux1 = (k * (abs(x)-d/2)**2 / 2).to(\"pN nm\")\n",
+    "\n",
+    "    Ux[abs(x)>(d/2)] = Ux1[abs(x)>(d/2)]\n",
+    "    \n",
+    "    return Ux+Uy"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "def bistable_trap_force(x,y):\n",
+    "    \n",
+    "    Fx1 = -np.sign(x.magnitude)*(abs(x)-d/2)*k\n",
+    "    Fx = x*h\n",
+    "    \n",
+    "    Fx[abs(x)>(d/2)] = Fx1[abs(x)>(d/2)]\n",
+    "    \n",
+    "    Fy = -y*k\n",
+    "    \n",
+    "    Fx = Fx.to(\"pN\")\n",
+    "    Fy = Fy.to(\"pN\")\n",
+    "\n",
+    "    return Fx, Fy"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Dipole Dipole interaction\n",
+    "\n",
+    "To do..."
+   ]
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.6.10"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 4
+}
