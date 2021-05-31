@@ -67,7 +67,8 @@ class sim():
 
             f.write("read_data "+self.input_name)
                 
-            f.write(self.world.group_def)
+            f.write(self.world.atom_group_def)
+            f.write(self.world.fine_group_def)
 
             f.write("\n### ---Variables--- ###\n") 
    
@@ -92,6 +93,8 @@ class sim():
             f.write(self.world.gravity_def)
             f.write(self.world.wall_def)
             f.write(self.world.enforce2d)
+            for st in self.world.active_def:
+                f.write(st)
             if not self.traps is None:
                 for t in self.traps:
                     f.write(t.velocity_fix)
@@ -111,7 +114,7 @@ class sim():
             
             for p in self.particles:
                 f.write(p.atom_def)
-            
+                        
             if not self.traps is None:
                 is_there_bonds = [t.cutoff == np.Inf*ureg.um for t in self.traps]
                 
@@ -129,14 +132,19 @@ class sim():
                     for t in self.traps:
                         if t.cutoff == np.Inf*ureg.um:
                             f.write(t.bond_params)
-                        
+            
+            f.write("\nEllipsoids\n\n")
+                
+            for p in self.particles:
+                f.write(p.e_def)
+                    
             f.write("\nPairIJ Coeffs\n\n")
             
             f.write(self.world.interaction_def)
         
             f.write("\n\n")
     
-    def write_run_def(self):
+    def create_run_def(self):
         self.run_steps = int(np.round(self.total_time.to(ureg.s)/self.timestep.to(ureg.s)))
         self.run_def = st.Template("\n" + \
             "### ---Run Commands--- ###\n" + \
@@ -195,6 +203,13 @@ class sim():
             for t in traps:
                 t.bonds_id = np.array(range(bonds_id,bonds_id + len(t.bonds)))
                 bonds_id += len(t.bonds)
+                
+                
+                
+        
+        for p in particles:
+            if p.group is None:
+                p.group = "Atoms_%u"%p.atom_type
                                          
     def generate_scripts(self):
         """
@@ -235,8 +250,8 @@ class sim():
                 
         self.world.create_string()
         self.field.create_string()
-
-        self.write_run_def()                     
+        self.create_run_def()      
+                       
         self.write_script()
         self.write_input()
                     

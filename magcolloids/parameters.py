@@ -1,6 +1,7 @@
 import string as st
 import numpy as np
 import copy as cp
+from . import geometry as geo
 from . import ureg
 
 """ Here we should change the abstraction: instead of a collection of particles with parameters, perhaps it would be more adequate to define a collection of particles with a single set of parameters. The program could then create a script from several collections of particles, which would allow different parameters. This is more in line with the way of lammps, and therefore probably simpler """
@@ -8,14 +9,17 @@ from . import ureg
 class particles():
     """ A type of particle to be simulated """
     def __init__(self, positions,
+                orientation = None,
                 atoms_id = None,
                 atom_type = 0,
+                group = None,
                 radius = 2*ureg.um,
                 susceptibility = 1,
                 drag = 4e6*ureg.pN/(ureg.um/ureg.s), 
                 diffusion = None, temperature = None, 
                 density = 1000*ureg.kg/ureg.m**3,
-                susceptibility_spread = 0):
+                susceptibility_spread = 0,
+                activity = None):
         """
         Initializes a particle type. 
         The diffusion coefficient can be given instead o the drag.
@@ -24,6 +28,12 @@ class particles():
         The `atoms_id` is a list of integers that uniquelly identifies each particle. It must be the same size as the `positions array`.
         The `atom_type` is an integer that uniquely identifies this group of particles. 
         Both arguments are necessary when more than one type of particles is initialized.
+        activity recieves a vector that defines the magnitude and orientation of the propulsion. It should be given in force units.
+        The activity orientation is a single vector, that is relative to the orientation vector.
+        The orientation can be given as a Nx3 or an Nx4 matrix. 
+                If it is an Nx3 vector it defines the original orientation of the vertical axis. 
+                If it is an Nx4 matrix, it defines the initial quaternion rotation. 
+                Currently, the orientation only makes sense for active particles. 
         """        
         if diffusion:
             
@@ -38,6 +48,20 @@ class particles():
         self.drag = drag.to(ureg.pg/ureg.us)
         self.mass = (density*4/3*np.pi*(radius)**3).to(ureg.pg)
         
+        self.group=group
+            
+        self.active = False
+        if activity is not None:
+            self.activity = activity.to(ureg.pg*ureg.um/ureg.us**2)
+            self.active = True
+            
+        if orientation is None:
+            N = len(positions)
+            r_vec = np.random.randn(N,3)
+            r_vec = r_vec/np.linalg.norm(r_vec,axis=1,keepdims=True)
+                
+            self.orientation =  geo.vec_to_quat(r_vec)
+        
         damp = 1e-3*ureg.us
         
         self.drag_mass = (drag*damp).to(ureg.pg)
@@ -46,23 +70,26 @@ class particles():
         """ creates the strings that then are introduced into the lammps scripts"""
         
         density = self.mass/(4/3*np.pi*self.radius**3)
-        atom_string = ("atom id|type|x0|y0|z0|d|rho|m|mx|my|mz|chi|trap_id")
+        atom_string = ("atom_id|type|x0|y0|z0|e_flag|rho|m|mx|my|mz|chi|trap_id")
+        e_string = ("atom_id|shapex|shapey|shapez|quatw|quati|quatj|quatk")
         
         ### This is the string pattern for a single atom. The colloid positions are left as a template, as well as the atom id. 
         self.atom_def = st.Template(
-            """$atom_ix\t $atom_type\t $center\t $diameter\t $density\t $moment\t $direction\t $susceptibility\t $trap_ix #$string""").substitute(
-                atom_ix = "$atom_ix",
-                atom_type = self.atom_type,
-                center = "$x0\t $y0\t $z0",
-                diameter = (self.radius*2).magnitude,
-                density = ((self.drag_mass)/(4/3*np.pi*self.radius**3)).magnitude,
-                moment = 0.0,
-                direction = "0\t 0\t 0",
-                susceptibility = self.susceptibility,
-                trap_ix = "$atom_trap",
-                string = atom_string
-        )
-        
+            """$atom_ix\t $atom_type\t $center\t $e_flag\t $density\t $moment\t $direction\t $susceptibility\t $trap_ix #$string""").substitute(
+                    atom_ix = "$atom_ix",
+                    atom_type = self.atom_type,
+                    center = "$x0\t $y0\t $z0",
+                    e_flag = 1,
+                    density = ((self.drag_mass)/(4/3*np.pi*self.radius**3)).magnitude,
+                    moment = 0.0,
+                    direction = "0\t 0\t 0",
+                    susceptibility = self.susceptibility,
+                    trap_ix = "$atom_trap",
+                    string = atom_string
+            )
+        self.e_def = """$atom_ix, $diameter, $diameter, $diameter, $quatw, $quati, $quatj, $quatk, #$string"""
+            
+
         # Now we use the string pattern defined before, and define an instance for each trap.
         self.atom_def = "\n".join(
             [st.Template(self.atom_def).substitute(
@@ -71,6 +98,16 @@ class particles():
                 atom_trap = ix)
                     for ix,c in zip(self.atoms_id,self.positions.magnitude)
             ]
+        )+"\n"
+        
+        self.e_def = "\n".join(
+                [st.Template(self.e_def).substitute(
+                    atom_ix = ix,
+                    diameter = (self.radius*2).magnitude,
+                    quatw = q[0], quati = q[1], quatj = q[2], quatk = q[3],
+                    string = e_string)
+                        for ix,q in zip(self.atoms_id, self.orientation)
+                ]
         )+"\n"
                 
 class bistable_trap():
@@ -149,14 +186,14 @@ class bistable_trap():
     def create_string(self):
         
         # We first define the string pattern that defines a single trap
-        atom_string = ("trap id|type|x0|y0|z0|1|1|0|dx|dy|dz|0|atom_id")
+        atom_string = ("trap id|type|x0|y0|z0|e_flag|null|0|dx|dy|dz|0|atom_id")
         
         self.atom_def = st.Template(
-            "$trap_ix\t $atom_type\t $center\t $diameter\t $density\t $moment\t $direction\t $susceptibility\t $atom_ix #$string").substitute(
+            "$trap_ix\t $atom_type\t $center\t $e_flag\t $density\t $moment\t $direction\t $susceptibility\t $atom_ix #$string").substitute(
                 trap_ix = "$trap_ix",
                 atom_type = self.atom_type,
                 center = "$x0\t $y0\t $z0",
-                diameter = 1,
+                e_flag = 0,
                 density = 1,
                 moment = 0,
                 direction = "$dx0\t $dy0\t $dz0",
@@ -315,7 +352,7 @@ class world():
 
         particle_types = len(self.particles)
         total_particles = sum([len(p.positions) for p in self.particles])
-
+          
         if not self.traps is None:
             trap_types = len(self.traps)
             total_bond_traps = sum([len(t.positions) for t in self.traps if t.cutoff==np.Inf*t.cutoff.units])
@@ -332,7 +369,7 @@ class world():
             self.world_def = st.Template(
             "\n" + \
             "units micro \n" +\
-            "atom_style hybrid sphere paramagnet bond \n" +\
+            "atom_style hybrid ellipsoid paramagnet bond \n" +\
             "boundary $x_bound $y_bound $z_bound \n" +\
             "$dimension \n" +\
             "neighbor 4.0 nsq \n" +\
@@ -352,7 +389,7 @@ class world():
             self.world_def = st.Template(
             "\n" + \
             "units micro \n" +\
-            "atom_style hybrid sphere paramagnet bond \n" +\
+            "atom_style hybrid ellipsoid paramagnet bond \n" +\
             "boundary $x_bound $y_bound $z_bound \n" +\
             "$dimension \n" +\
             "neighbor 4.0 nsq \n" +\
@@ -373,16 +410,19 @@ class world():
         "\n" + \
         "$total_atoms atoms \n" +\
         "$atom_types atom types \n" +\
+        "$ellipsoids ellipsoids\n"+\
         "$bonds bonds \n" +\
         "$bonds bond types \n" +\
         "$spx1 $spx2 xlo xhi \n" +\
         "$spy1 $spy2 ylo yhi \n" +\
         "$spz1 $spz2 zlo zhi \n")
-
+        
+        
         self.region_def = self.region_def.substitute(
             total_atoms = total_particles+total_bond_traps+total_pair_traps,
             atom_types = particle_types+trap_types,
             bonds = total_bond_traps,
+            ellipsoids = total_particles,
             spx1 = self.region[0].magnitude,
             spx2 = self.region[1].magnitude,
             spy1 = self.region[2].magnitude,
@@ -449,14 +489,24 @@ class world():
         self.interaction_def = "\n".join(self.interaction_def)
     
         #atom_group = "group Atoms type $particle_"
-        self.group_def = "\n"+"\n".join([
+        self.atom_group_def = "\n"+"\n".join([
             st.Template(
                 """group Atoms type $particle_type \n""").substitute(
                     particle_type = p.atom_type
                 ) for p in self.particles
             ])
+            
+        self.fine_group_def = "\n"+"\n".join([
+            st.Template(
+                """group $group type $particle_type \n""").substitute(
+                    group = p.group,
+                    particle_type = p.atom_type
+                ) for p in self.particles
+            ])
+            
+        
         if self.traps is not None:    
-            self.group_def += "\n".join([
+            self.atom_group_def += "\n".join([
                 st.Template(
                     """group Traps type $particle_type \n""").substitute(
                         particle_type = p.atom_type
@@ -472,7 +522,7 @@ class world():
        
         self.interaction_strings()
             
-        self.group_def += """mass * 1\n"""
+        self.atom_group_def += """mass * 1"""
         
         damp = 1e-3*ureg.us
         # self.damp = diffusion*mass/(kb*self.temperature)
@@ -481,9 +531,14 @@ class world():
         self.seed = np.random.randint(1000000)
         
         fx_no = 2
+        
+        integrator = "bd"
+        if any([p.active for p in self.particles]):
+            integrator = "bd/asphere"
+            
         self.integrator_def = st.Template(
-            "\nfix 	$fx_no Atoms bd $temp $damp $seed \n").substitute(
-                fx_no = fx_no, temp=self.temperature.magnitude, damp=damp.magnitude, seed=self.seed)
+            "\nfix 	$fx_no Atoms $int $temp $damp $seed \n").substitute(
+                fx_no = fx_no, int=integrator, temp=self.temperature.magnitude, damp=damp.magnitude, seed=self.seed)
         
         fx_no = 3
         self.gravity_force = (
@@ -491,7 +546,7 @@ class world():
             ).to(ureg.pg*ureg.um/ureg.us**2)
         
         fix_no = 4
-        self.gravity_def = st.Template("\nfix     $fx_no Atoms addforce 0 0 $mg \n").substitute(fx_no = fx_no, mg = -self.gravity_force.magnitude) # pg*um/(us^2) (I hope)
+        self.gravity_def = st.Template("\nfix 	$fx_no Atoms addforce 0 0 $mg \n").substitute(fx_no = fx_no, mg = -self.gravity_force.magnitude) # pg*um/(us^2) (I hope)
         
         fx_no = 5
         if self.enforce2d:
@@ -502,6 +557,20 @@ class world():
         fx_no = 6
         self.wall_def = self.create_wall_string(fx_no)
         
+        fx_no = 7
+        
+        self.active_def = []
+        
+        for p in self.particles:
+            if p.active:
+                self.active_def.append(st.Template("\nfix 	$fx_no $group setactive $actx $acty $actz \n").substitute(
+                            fx_no = fx_no, 
+                            group = p.group,
+                            actx = p.activity[0].magnitude, 
+                            acty = p.activity[1].magnitude, 
+                            actz = p.activity[2].magnitude)) # pg*um/(us^2) (I hope)
+                fx_no +=1
+            
     def reset_seed(self, seed = None):
         """ Resets the seed of the world object for it to be used again. If the seed parameter is used, the seed is set to that. If not, it is a random number between 1 and 1000000 """
         
