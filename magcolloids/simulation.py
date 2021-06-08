@@ -7,7 +7,7 @@ import sys
 import pandas as pd
 import copy as cp
 from . import ureg
-
+import tqdm.auto as tqdm
  
 class sim():
     def __init__(self,
@@ -311,34 +311,38 @@ class trj_lazyread():
         self.columns = ['frame', 'id', 'type'] + output
         self.formats = ['i8','i8', 'i8']+['float32']*len(output)
         
-        with open(Filename) as d:
-            line = "d"
-            while line:
-                line = d.readline()
-                
-                if 'ITEM: TIMESTEP' in line:
+        with tqdm.tqdm(total = os.path.getsize(Filename), 
+                        leave = False,
+                        desc = print("scanning file")) as pbar:
+            with open(Filename) as d:
+                line = "d"
+                while line:
                     line = d.readline()
-                    t = int(line)
+                    pbar.update(len(line))
                     
-                if 'ITEM: NUMBER OF ATOMS' in line:
-                    line = d.readline()
-                    item["atoms"] = int(line)
+                    if 'ITEM: TIMESTEP' in line:
+                        line = d.readline()
+                        t = int(line)
                     
-                if 'ITEM: BOX BOUNDS' in line:
-                    line = d.readline()
-                    bounds["x"] = np.array([float(i) for i in line.split(' ') if i!='\n'])
+                    if 'ITEM: NUMBER OF ATOMS' in line:
+                        line = d.readline()
+                        item["atoms"] = int(line)
                     
-                    line = d.readline()
-                    bounds["y"] = np.array([float(i) for i in line.split(' ') if i!='\n'])
+                    if 'ITEM: BOX BOUNDS' in line:
+                        line = d.readline()
+                        bounds["x"] = np.array([float(i) for i in line.split(' ') if i!='\n'])
                     
-                    line = d.readline()
-                    bounds["z"] = np.array([float(i) for i in line.split(' ') if i!='\n'])
+                        line = d.readline()
+                        bounds["y"] = np.array([float(i) for i in line.split(' ') if i!='\n'])
                     
-                    item["bounds"] = bounds
+                        line = d.readline()
+                        bounds["z"] = np.array([float(i) for i in line.split(' ') if i!='\n'])
                     
-                if 'ITEM: ATOMS' in line:
-                    item["location"] = d.tell()
-                    self.T[t] = cp.deepcopy(item)
+                        item["bounds"] = bounds
+                    
+                    if 'ITEM: ATOMS' in line:
+                        item["location"] = d.tell()
+                        self.T[t] = cp.deepcopy(item)
      
     def __getitem__(self, sliced):
         return self.read_trj(sliced)
@@ -357,8 +361,12 @@ class trj_lazyread():
         data.index.name = "frame"
         return data
             
-    def read_frame(self,time):
+    def read_frame(self,time, verb = False):
         
+        progress = lambda x: x
+        if verb:
+            progress = tqdm.tqdm()
+            
         Atoms = np.zeros(
             int(self.T[time]["atoms"]),
             dtype={
@@ -366,8 +374,13 @@ class trj_lazyread():
                 'formats':self.formats[1:]})
         j=0
         with open(self.Name) as d:
+            if verb:
+                print("seeking...")
             d.seek(self.T[time]["location"])
-            for i in range(0,int(self.T[time]["atoms"])):
+            
+            if verb:
+                print("reading...")
+            for i in progress(range(0,int(self.T[time]["atoms"]))):
                 line = d.readline()
                 line = line.replace("-1.#IND","-NaN").replace("1.#IND","NaN")
                 line = line.replace("-1.#QNAN","-NaN").replace("1.#QNAN","NaN")
@@ -375,6 +388,7 @@ class trj_lazyread():
                 for i,out in enumerate(self.columns[1:]):
                     Atoms[out][j] = linearray[i]
                 j=j+1;
+            
         return Atoms
         
     def read_trj(self,*args):
