@@ -335,7 +335,8 @@ class world():
             "atom_style hybrid sphere paramagnet bond \n" +\
             "boundary $x_bound $y_bound $z_bound \n" +\
             "$dimension \n" +\
-            "neighbor 4.0 nsq \n" +\
+            "neighbor 1.0 bin \n" +\
+            "neigh_modify every 1 delay 1 check yes\n" +\
             "pair_style hybrid biharmonic $bh_cut lj/cut/dipole/cut $lj_cut $dpl_cut \n" +\
             "bond_style biharmonic \n")
             
@@ -355,7 +356,8 @@ class world():
             "atom_style hybrid sphere paramagnet bond \n" +\
             "boundary $x_bound $y_bound $z_bound \n" +\
             "$dimension \n" +\
-            "neighbor 4.0 nsq \n" +\
+            "neighbor 1.0 bin \n" +\
+            "neigh_modify every 1 delay 1 check yes\n" +\
             "pair_style hybrid lj/cut/dipole/cut $lj_cut $dpl_cut \n" +\
             "bond_style biharmonic\n")
 
