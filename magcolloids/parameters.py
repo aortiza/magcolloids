@@ -485,7 +485,7 @@ class world():
         fx_no = 2
         self.integrator_def = st.Template(
             "\nfix 	$fx_no Atoms bd $temp $damp $seed \n").substitute(
-                fx_no = fx_no, temp=self.temperature.magnitude, damp=damp.magnitude, seed=self.seed)
+                fx_no = fx_no, temp=self.temperature.magnitude, damp=damp.magnitude, seed="$seed")
         
         fx_no = 3
         self.gravity_force = (
