@@ -220,7 +220,8 @@ class sim():
         if self.stamp_time:
             self.base_name = self.base_name + \
                 tm.strftime('_%Y_%m_%d_%H_%M_%S')
-        self.seed = np.random.randint(1000000)
+            
+        #self.seed = np.random.randint(1000000)
         #self.seed = 1
                 
         self.script_name = self.base_name+'.lmpin'
