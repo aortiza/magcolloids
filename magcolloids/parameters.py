@@ -158,8 +158,11 @@ class bistable_trap():
         self.cutoff = cutoff
         self.velocity = velocity
 
-        # This is provisional, ideally, the height should be input to lammps as pN nm, and from that a negative stiffness calculated.
-        self.height = self.height*8/(self.distance**2)
+        # This is provisional,
+        # ideally, the height should be input to lammps as pN nm,
+        # and from that a negative stiffness calculated.
+        # 
+        # self.height = self.height*8/(self.distance**2)
 
 
     def bond_to_particles(self):
@@ -177,7 +180,7 @@ class bistable_trap():
         except AttributeError:
             # this happens if particles is an array
 
-            # self.bonds should be an array that contains those atoms to which this trap is bonded.
+            # self.bonds should be an array that contains those atoms to which this trap is bound.
             # This is calculated from a subset array which is input to the trap type.
 
             atom_id = lambda s: self.particles[s[0]].atoms_id[s[1]]
@@ -228,9 +231,7 @@ class bistable_trap():
             )+"\n"
             # The bond params are defined by bond type. These determine the stiffness and height of the traps
             height_disorder = self.height *(np.random.randn(len(self.traps_id))*self.height_spread+1)
-            #height_disorder = height_disorder.to(ureg.pg*ureg.um**2/ureg.us**2).magnitude
-            height_disorder = height_disorder.to(ureg.pg/ureg.us**2).magnitude
-            # When this is changed to have the correct input to lammps, line 205 should be changed as well
+            height_disorder = height_disorder.to(ureg.pg*ureg.um**2/ureg.us**2).magnitude
 
             self.bond_params = "\n".join([st.Template(
                 """$bond_type  $stiffness $height_energy""").substitute(
@@ -246,7 +247,7 @@ class bistable_trap():
                     atom_type = "$type_i",
                     trap_type = "$type_j",
                     k_outer = self.stiffness.magnitude,
-                    k_inner = self.height.to(ureg.pg/ureg.us**2).magnitude,
+                    k_inner = self.height.to(ureg.pg*ureg.um**2/ureg.us**2).magnitude,
                     cutoff = self.cutoff.to(ureg.um).magnitude)]))
 
         if self.velocity is not None:
@@ -398,7 +399,8 @@ class world():
             "atom_style hybrid ellipsoid paramagnet bond \n" +\
             "boundary $x_bound $y_bound $z_bound \n" +\
             "$dimension \n" +\
-            "neighbor 4.0 nsq \n" +\
+            "neighbor 1.0 bin \n" +\
+            "neigh_modify every 1 delay 1 check yes\n" +\
             "pair_style hybrid lj/cut/dipole/cut $lj_cut $dpl_cut \n" +\
             "bond_style biharmonic\n")
 
@@ -422,7 +424,6 @@ class world():
         "$spx1 $spx2 xlo xhi \n" +\
         "$spy1 $spy2 ylo yhi \n" +\
         "$spz1 $spz2 zlo zhi \n")
-
 
         self.region_def = self.region_def.substitute(
             total_atoms = total_particles+total_bond_traps+total_pair_traps,

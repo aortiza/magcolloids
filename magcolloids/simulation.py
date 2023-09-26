@@ -8,13 +8,14 @@ import pandas as pd
 import copy as cp
 from . import ureg
 import tqdm.auto as tqdm
+import subprocess as sub
 
 class sim():
     def __init__(self,
         file_name = "test", dir_name = "",stamp_time = False,
         particles = None, traps = None, world = None, field = None,
         timestep = 1e-3*ureg.s, framerate = 30*ureg.Hz, total_time = 60*ureg.s,
-        output = ["x", "y", "z"], processors = 1):
+        output = ["x", "y", "z"], processors = 1, seed = None):
         """
         A sim object contains the parameters defined before. It also requires some extra parameters that define the files in which the simulation scripts and results are stored """
 
@@ -23,7 +24,7 @@ class sim():
         self.stamp_time = stamp_time
 
         self.particles = particles
-        
+
         # particles can be an array or not, but self.particles must be an array.
         # In the lines below, I ensure that self.particles is set from an array
         try:
@@ -55,6 +56,9 @@ class sim():
 
         self.output = output
         self.processors = processors
+        if seed is None:
+            seed = np.random.randint(1000000)
+        self.seed = seed
 
     def write_script(self):
         """ Write the lmpin file"""
@@ -89,7 +93,10 @@ class sim():
             f.write("\n### ---Fixes--- ###\n")
 
             f.write(self.field.fix_def)
-            f.write(self.world.integrator_def)
+
+            integrator_def = st.Template(self.world.integrator_def).substitute(seed = self.seed)
+            f.write(integrator_def)
+
             f.write(self.world.gravity_def)
             f.write(self.world.wall_def)
             f.write(self.world.enforce2d)
@@ -204,9 +211,6 @@ class sim():
                 t.bonds_id = np.array(range(bonds_id,bonds_id + len(t.bonds)))
                 bonds_id += len(t.bonds)
 
-
-
-
         for p in particles:
             if p.group is None:
                 p.group = "Atoms_%u"%p.atom_type
@@ -219,14 +223,17 @@ class sim():
             This icreases readibility for large amounts of particles
         """
 
-        if not os.path.exists(self.dir_name):
+        try:
             os.makedirs(self.dir_name)
+        except:
+            pass
 
         self.base_name = os.path.join(self.dir_name,self.file_name)
         if self.stamp_time:
             self.base_name = self.base_name + \
                 tm.strftime('_%Y_%m_%d_%H_%M_%S')
-        self.seed = np.random.randint(1000000)
+
+        #self.seed = np.random.randint(1000000)
         #self.seed = 1
 
         self.script_name = self.base_name+'.lmpin'
@@ -250,8 +257,8 @@ class sim():
 
         self.world.create_string()
         self.field.create_string()
-        self.create_run_def()
 
+        self.write_run_def()
         self.write_script()
         self.write_input()
 
@@ -281,11 +288,10 @@ class sim():
             print(lmp_exec + " -in "+self.script_name)
 
         self.lmp_exec = lmp_exec
-        if self.processors>1:
-            os.system(lmp_exec + " -in "+self.script_name)
-
-        else:
-            os.system(lmp_exec + " -in "+self.script_name)
+        output = sub.run([lmp_exec, "-in", self.script_name],
+                         shell= False,
+                         capture_output=True)
+        return output
 
     def load(self,read_trj = False,sl = slice(0,-1,1)):
         """This method creates a lazy read object. The option read_trj = True reads the whole trj file and returns the output"""

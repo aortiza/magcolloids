@@ -1,3 +1,3 @@
 LAMMPS (18 Jun 2019)
 ### ---preamble--- ###
-log /home/aortiza/Data/DecimatedSquare/test12/decimationchi_0.350000_e_1.log
+log ../Data/Run1-PlainRun/Tilt_0_deg_h3899_2023_07_14_10_49_58.log
