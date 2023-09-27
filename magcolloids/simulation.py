@@ -100,8 +100,8 @@ class sim():
             f.write(self.world.gravity_def)
             f.write(self.world.wall_def)
             f.write(self.world.enforce2d)
-            for st in self.world.active_def:
-                f.write(st)
+            for str in self.world.active_def:
+                f.write(str)
             if not self.traps is None:
                 for t in self.traps:
                     f.write(t.velocity_fix)
@@ -258,7 +258,7 @@ class sim():
         self.world.create_string()
         self.field.create_string()
 
-        self.write_run_def()
+        self.create_run_def()
         self.write_script()
         self.write_input()
 
@@ -328,20 +328,30 @@ class trj_lazyread():
 
                     if 'ITEM: TIMESTEP' in line:
                         line = d.readline()
+                        pbar.update(len(line))
+
                         t = int(line)
 
                     if 'ITEM: NUMBER OF ATOMS' in line:
                         line = d.readline()
+                        pbar.update(len(line))
+
                         item["atoms"] = int(line)
 
                     if 'ITEM: BOX BOUNDS' in line:
                         line = d.readline()
+                        pbar.update(len(line))
+
                         bounds["x"] = np.array([float(i) for i in line.split(' ') if i!='\n'])
 
                         line = d.readline()
+                        pbar.update(len(line))
+
                         bounds["y"] = np.array([float(i) for i in line.split(' ') if i!='\n'])
 
                         line = d.readline()
+                        pbar.update(len(line))
+                        
                         bounds["z"] = np.array([float(i) for i in line.split(' ') if i!='\n'])
 
                         item["bounds"] = bounds

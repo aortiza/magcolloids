@@ -275,7 +275,7 @@ class world():
                 dipole_cutoff = 200*ureg.um, lj_cutoff = 1,
                 lj_parameters = [1e-2*ureg.pg*ureg.um**2/ureg.us**2, 2**(-1/6)],
                 gravity = 9.8*ureg.m/ureg.s**2,
-                enforce2d = False, ext_force = None):
+                enforce2d = False, ext_force = None, neighbor = "bin"):
 
         """ Real world parameters like the temperature. Also the confining walls
         Sets world parameters, like temperture, region, dipole cutoff and such.
@@ -318,6 +318,7 @@ class world():
         self.lj_parameters = lj_parameters #[pg um^2 us^-2,sigma]
         self.gravity = gravity.to(ureg.um/ureg.us**2)
         self.enforce2d = enforce2d
+        self.neighbor = neighbor
 
         if len(self.region)==3:
             self.region = [p*s/2 for s in self.region for p in [-1,1]]
@@ -372,47 +373,45 @@ class world():
         # pair traps are finite. They have a cuttoff after which they stop being effective. They also can act on any atom that comes close to them.
 
         # bond traps act on a specific set of particles. They can also have a cuttoff, but if a particle leaves the trap, it will keep being associated to it. It cannot then be trapped by an adjoining trap.
+
+
         if total_pair_traps>0:
-            self.world_def = st.Template(
-            "\n" + \
-            "units micro \n" +\
-            "atom_style hybrid ellipsoid paramagnet bond \n" +\
-            "boundary $x_bound $y_bound $z_bound \n" +\
-            "$dimension \n" +\
-            "neighbor 4.0 nsq \n" +\
-            "pair_style hybrid biharmonic $bh_cut lj/cut/dipole/cut $lj_cut $dpl_cut \n" +\
-            "bond_style biharmonic \n")
 
-            self.world_def = self.world_def.substitute(
-                                x_bound = self.boundaries[0],
-                                y_bound = self.boundaries[1],
-                                z_bound = self.boundaries[2],
-                                bh_cut = self.bh_cutoff,
-                                lj_cut = self.lj_cutoff,
-                                dpl_cut = self.dipole_cutoff.magnitude,
-                                dimension = dimension
-                                )
+            pair_styles = "pair_style hybrid biharmonic " +\
+                "$bh_cut lj/cut/dipole/cut $lj_cut $dpl_cut \n" +\
+                "bond_style biharmonic \n"
+
         else:
-            self.world_def = st.Template(
-            "\n" + \
-            "units micro \n" +\
-            "atom_style hybrid ellipsoid paramagnet bond \n" +\
-            "boundary $x_bound $y_bound $z_bound \n" +\
-            "$dimension \n" +\
-            "neighbor 1.0 bin \n" +\
-            "neigh_modify every 1 delay 1 check yes\n" +\
-            "pair_style hybrid lj/cut/dipole/cut $lj_cut $dpl_cut \n" +\
-            "bond_style biharmonic\n")
+            pair_styles = "pair_style hybrid " +\
+            "lj/cut/dipole/cut $lj_cut $dpl_cut \n" +\
+            "bond_style biharmonic \n"
 
-            self.world_def = self.world_def.substitute(
-                                            x_bound = self.boundaries[0],
-                                            y_bound = self.boundaries[1],
-                                            z_bound = self.boundaries[2],
-                                            bh_cut = self.bh_cutoff,
-                                            lj_cut = self.lj_cutoff,
-                                            dpl_cut = self.dipole_cutoff.magnitude,
-                                            dimension = dimension
-                                            )
+        if self.neighbor == "nsq":
+            neigh_def = "neighbor 1.0 nsq \n" +\
+            "neigh_modify every 1 delay 1 check yes\n"
+        else:
+            neigh_def = "neighbor 4.0 bin \n" +\
+            "neigh_modify every 1 delay 1 check yes\n"
+
+        self.world_def = st.Template(
+        "\n" + \
+        "units micro \n" +\
+        "atom_style hybrid ellipsoid paramagnet bond \n" +\
+        "boundary $x_bound $y_bound $z_bound \n" +\
+        "$dimension \n" +\
+        neigh_def + pair_styles)
+        # It would be nice to include some way to input this
+
+        self.world_def = self.world_def.substitute(
+                                        x_bound = self.boundaries[0],
+                                        y_bound = self.boundaries[1],
+                                        z_bound = self.boundaries[2],
+                                        bh_cut = self.bh_cutoff,
+                                        lj_cut = self.lj_cutoff,
+                                        dpl_cut = self.dipole_cutoff.magnitude,
+                                        dimension = dimension
+                                        )
+
 
         self.region_def = st.Template(
         "\n" + \
