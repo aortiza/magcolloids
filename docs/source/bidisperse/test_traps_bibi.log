@@ -1,8 +1,9 @@
 units micro
-atom_style hybrid sphere paramagnet bond
+atom_style hybrid ellipsoid paramagnet bond
 boundary p p f
 
-neighbor 4.0 nsq
+neighbor 4.0 bin
+neigh_modify every 1 delay 1 check yes
 pair_style hybrid lj/cut/dipole/cut 1 20
 bond_style biharmonic
 
@@ -14,14 +15,15 @@ read_data bidisperse/test_traps_bibi.lmpdata
   6 atoms
   scanning bonds ...
   1 = max bonds/atom
+  3 ellipsoids
   reading bonds ...
   3 bonds
   1 = max # of 1-2 neighbors
   0 = max # of 1-3 neighbors
   0 = max # of 1-4 neighbors
   1 = max # of special neighbors
-  special bonds CPU = 7.98702e-05 secs
-  read_data CPU = 0.000479937 secs
+  special bonds CPU = 1.88351e-05 secs
+  read_data CPU = 0.000285149 secs
 group Atoms type 1
 1 atoms in group Atoms
 
@@ -33,6 +35,11 @@ group Traps type 3
 group Traps type 4
 3 atoms in group Traps
 mass * 1
+group Atoms_1 type 1
+1 atoms in group Atoms_1
+
+group Atoms_2 type 2
+2 atoms in group Atoms_2
 
 ### ---Variables--- ###
 
@@ -49,9 +56,9 @@ variable fieldz atom v_Bmag*cos(v_theta)
 ### ---Fixes--- ###
 
 fix 	1 Atoms setdipole v_fieldx v_fieldy v_fieldz 0
-fix 	2 Atoms bd 300 0.001 317293
+fix 	2 Atoms bd 300 0.001 465111
 
-fix     3 Atoms addforce 0 0 -0.0
+fix 	3 Atoms addforce 0 0 -0.0
 fix 	6 Atoms wall/lj126 zlo EDGE 0.01 1.7817974362806785  2 zhi EDGE 0.01 1.7817974362806785  2
 
 ### ---Run Commands--- ###
@@ -61,10 +68,11 @@ thermo_style 	custom step atoms
 thermo 	100
 run 	600000
 Neighbor list info ...
-  update every 1 steps, delay 10 steps, check yes
+  update every 1 steps, delay 1 steps, check yes
   max neighbors/atom: 2000, page size: 100000
   master list distance cutoff = 24
   ghost atom cutoff = 24
+  binsize = 12, bins = 2 2 1
   3 neighbor lists, perpetual/occasional/extra = 3 0 0
   (1) pair lj/cut/dipole/cut, perpetual, skip from (3)
       attributes: half, newton on
@@ -73,15 +81,15 @@ Neighbor list info ...
       bin: none
   (2) fix setdipole, perpetual
       attributes: full, newton on
-      pair build: full/nsq
-      stencil: none
-      bin: none
+      pair build: full/bin
+      stencil: full/bin/3d
+      bin: standard
   (3) neighbor class addition, perpetual, half/full from (2)
       attributes: half, newton on
       pair build: halffull/newton
       stencil: none
       bin: none
-Per MPI rank memory allocation (min/avg/max) = 7.827 | 7.827 | 7.827 Mbytes
+Per MPI rank memory allocation (min/avg/max) = 8.401 | 8.401 | 8.401 Mbytes
 Step Atoms 
        0        6 
      100        6 
@@ -6084,21 +6092,21 @@ Step Atoms
   599800        6 
   599900        6 
   600000        6 
-Loop time of 14.6336 on 1 procs for 600000 steps with 6 atoms
+Loop time of 9.12406 on 1 procs for 600000 steps with 6 atoms
 
-Performance: 354254385649636.188 ns/day, 0.000 hours/ns, 41001.665 timesteps/s
-88.2% CPU use with 1 MPI tasks x no OpenMP threads
+Performance: 568168242172994.375 ns/day, 0.000 hours/ns, 65760.213 timesteps/s
+99.0% CPU use with 1 MPI tasks x no OpenMP threads
 
 MPI task timing breakdown:
 Section |  min time  |  avg time  |  max time  |%varavg| %total
 ---------------------------------------------------------------
-Pair    | 0.43207    | 0.43207    | 0.43207    |   0.0 |  2.95
-Bond    | 0.129      | 0.129      | 0.129      |   0.0 |  0.88
+Pair    | 0.32941    | 0.32941    | 0.32941    |   0.0 |  3.61
+Bond    | 0.10834    | 0.10834    | 0.10834    |   0.0 |  1.19
 Neigh   | 0          | 0          | 0          |   0.0 |  0.00
-Comm    | 1.0001     | 1.0001     | 1.0001     |   0.0 |  6.83
-Output  | 0.17543    | 0.17543    | 0.17543    |   0.0 |  1.20
-Modify  | 12.678     | 12.678     | 12.678     |   0.0 | 86.63
-Other   |            | 0.2192     |            |       |  1.50
+Comm    | 0.75348    | 0.75348    | 0.75348    |   0.0 |  8.26
+Output  | 0.051169   | 0.051169   | 0.051169   |   0.0 |  0.56
+Modify  | 7.6933     | 7.6933     | 7.6933     |   0.0 | 84.32
+Other   |            | 0.1884     |            |       |  2.06
 
 Nlocal:    6 ave 6 max 6 min
 Histogram: 1 0 0 0 0 0 0 0 0 0
@@ -6114,4 +6122,4 @@ Ave neighs/atom = 7
 Ave special neighs/atom = 1
 Neighbor list builds = 0
 Dangerous builds = 0
-Total wall time: 0:00:14
+Total wall time: 0:00:09

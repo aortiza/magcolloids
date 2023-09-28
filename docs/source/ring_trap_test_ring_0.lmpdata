@@ -1,0 +1,60 @@
+This is the initial atom setup of ./ring_trap_test_ring_0.lmpdata
+20 atoms 
+1 atom types 
+20 ellipsoids
+0 bonds 
+0 bond types 
+-75.0 75.0 xlo xhi 
+-75.0 75.0 ylo yhi 
+-2.5 2.5 zlo zhi 
+
+Atoms
+
+1	 1	 50.0	 0.0	 0.0	 1	 0.0017657440443523084	 0.0	 0	 0	 0	 0	 1 #atom_id|type|x0|y0|z0|e_flag|rho|m|mx|my|mz|chi|trap_id
+2	 1	 47.552825814757675	 15.450849718747369	 0.0	 1	 0.0017657440443523084	 0.0	 0	 0	 0	 0	 2 #atom_id|type|x0|y0|z0|e_flag|rho|m|mx|my|mz|chi|trap_id
+3	 1	 40.45084971874737	 29.389262614623657	 0.0	 1	 0.0017657440443523084	 0.0	 0	 0	 0	 0	 3 #atom_id|type|x0|y0|z0|e_flag|rho|m|mx|my|mz|chi|trap_id
+4	 1	 29.38926261462366	 40.450849718747364	 0.0	 1	 0.0017657440443523084	 0.0	 0	 0	 0	 0	 4 #atom_id|type|x0|y0|z0|e_flag|rho|m|mx|my|mz|chi|trap_id
+5	 1	 15.450849718747373	 47.552825814757675	 0.0	 1	 0.0017657440443523084	 0.0	 0	 0	 0	 0	 5 #atom_id|type|x0|y0|z0|e_flag|rho|m|mx|my|mz|chi|trap_id
+6	 1	 3.061616997868383e-15	 50.0	 0.0	 1	 0.0017657440443523084	 0.0	 0	 0	 0	 0	 6 #atom_id|type|x0|y0|z0|e_flag|rho|m|mx|my|mz|chi|trap_id
+7	 1	 -15.450849718747367	 47.55282581475768	 0.0	 1	 0.0017657440443523084	 0.0	 0	 0	 0	 0	 7 #atom_id|type|x0|y0|z0|e_flag|rho|m|mx|my|mz|chi|trap_id
+8	 1	 -29.38926261462365	 40.45084971874737	 0.0	 1	 0.0017657440443523084	 0.0	 0	 0	 0	 0	 8 #atom_id|type|x0|y0|z0|e_flag|rho|m|mx|my|mz|chi|trap_id
+9	 1	 -40.450849718747364	 29.38926261462366	 0.0	 1	 0.0017657440443523084	 0.0	 0	 0	 0	 0	 9 #atom_id|type|x0|y0|z0|e_flag|rho|m|mx|my|mz|chi|trap_id
+10	 1	 -47.552825814757675	 15.450849718747376	 0.0	 1	 0.0017657440443523084	 0.0	 0	 0	 0	 0	 10 #atom_id|type|x0|y0|z0|e_flag|rho|m|mx|my|mz|chi|trap_id
+11	 1	 -50.0	 6.123233995736766e-15	 0.0	 1	 0.0017657440443523084	 0.0	 0	 0	 0	 0	 11 #atom_id|type|x0|y0|z0|e_flag|rho|m|mx|my|mz|chi|trap_id
+12	 1	 -47.55282581475768	 -15.450849718747364	 0.0	 1	 0.0017657440443523084	 0.0	 0	 0	 0	 0	 12 #atom_id|type|x0|y0|z0|e_flag|rho|m|mx|my|mz|chi|trap_id
+13	 1	 -40.45084971874737	 -29.38926261462365	 0.0	 1	 0.0017657440443523084	 0.0	 0	 0	 0	 0	 13 #atom_id|type|x0|y0|z0|e_flag|rho|m|mx|my|mz|chi|trap_id
+14	 1	 -29.38926261462366	 -40.450849718747364	 0.0	 1	 0.0017657440443523084	 0.0	 0	 0	 0	 0	 14 #atom_id|type|x0|y0|z0|e_flag|rho|m|mx|my|mz|chi|trap_id
+15	 1	 -15.450849718747378	 -47.552825814757675	 0.0	 1	 0.0017657440443523084	 0.0	 0	 0	 0	 0	 15 #atom_id|type|x0|y0|z0|e_flag|rho|m|mx|my|mz|chi|trap_id
+16	 1	 -9.184850993605149e-15	 -50.0	 0.0	 1	 0.0017657440443523084	 0.0	 0	 0	 0	 0	 16 #atom_id|type|x0|y0|z0|e_flag|rho|m|mx|my|mz|chi|trap_id
+17	 1	 15.450849718747362	 -47.55282581475768	 0.0	 1	 0.0017657440443523084	 0.0	 0	 0	 0	 0	 17 #atom_id|type|x0|y0|z0|e_flag|rho|m|mx|my|mz|chi|trap_id
+18	 1	 29.389262614623647	 -40.45084971874738	 0.0	 1	 0.0017657440443523084	 0.0	 0	 0	 0	 0	 18 #atom_id|type|x0|y0|z0|e_flag|rho|m|mx|my|mz|chi|trap_id
+19	 1	 40.450849718747364	 -29.38926261462366	 0.0	 1	 0.0017657440443523084	 0.0	 0	 0	 0	 0	 19 #atom_id|type|x0|y0|z0|e_flag|rho|m|mx|my|mz|chi|trap_id
+20	 1	 47.552825814757675	 -15.450849718747381	 0.0	 1	 0.0017657440443523084	 0.0	 0	 0	 0	 0	 20 #atom_id|type|x0|y0|z0|e_flag|rho|m|mx|my|mz|chi|trap_id
+
+Ellipsoids
+
+1, 4, 4, 4, 0.39665726923900346, -0.5808955275914124, 0.5967861068123836, 0.3860955056716789, #atom_id|shapex|shapey|shapez|quatw|quati|quatj|quatk
+2, 4, 4, 4, 0.7764411737079184, -0.14874956533621572, 0.1994798348452394, 0.5789822674948456, #atom_id|shapex|shapey|shapez|quatw|quati|quatj|quatk
+3, 4, 4, 4, 0.4616771427952437, 0.424821811416909, 0.2682950079037691, -0.7310256035863539, #atom_id|shapex|shapey|shapez|quatw|quati|quatj|quatk
+4, 4, 4, 4, 0.8844300079678578, 0.10618174403879242, 0.3823310414428019, -0.24562567656521173, #atom_id|shapex|shapey|shapez|quatw|quati|quatj|quatk
+5, 4, 4, 4, 0.05440777754114275, -0.9414980628602846, 0.18559964497986778, 0.275996310041841, #atom_id|shapex|shapey|shapez|quatw|quati|quatj|quatk
+6, 4, 4, 4, 0.6818558090476948, -0.29432083273713605, 0.5694161679510591, 0.35243883265151654, #atom_id|shapex|shapey|shapez|quatw|quati|quatj|quatk
+7, 4, 4, 4, 0.47832420668323505, -0.5095818750106657, 0.4222289526006371, 0.5772824071000581, #atom_id|shapex|shapey|shapez|quatw|quati|quatj|quatk
+8, 4, 4, 4, 0.34327130255879124, -0.6543814903952586, 0.440949135277177, 0.5094247127554581, #atom_id|shapex|shapey|shapez|quatw|quati|quatj|quatk
+9, 4, 4, 4, 0.39853585952774784, 0.5669009570187467, 0.36254374937371847, -0.6231809555753085, #atom_id|shapex|shapey|shapez|quatw|quati|quatj|quatk
+10, 4, 4, 4, 0.0792264281797952, -0.8666678257957922, 0.145957235296455, 0.47043228872270415, #atom_id|shapex|shapey|shapez|quatw|quati|quatj|quatk
+11, 4, 4, 4, 0.12901008283897517, -0.6194779706892692, 0.10415549546736329, 0.7673037697812607, #atom_id|shapex|shapey|shapez|quatw|quati|quatj|quatk
+12, 4, 4, 4, 0.9447801101639495, -0.022148820722043706, 0.3203645633714422, 0.06531860160048955, #atom_id|shapex|shapey|shapez|quatw|quati|quatj|quatk
+13, 4, 4, 4, 0.5683976575617421, -0.42620616521619176, 0.5467925919619476, 0.44304657654197926, #atom_id|shapex|shapey|shapez|quatw|quati|quatj|quatk
+14, 4, 4, 4, 0.8416838676153714, -0.13211603618385587, 0.4660218519146232, 0.23861528349450095, #atom_id|shapex|shapey|shapez|quatw|quati|quatj|quatk
+15, 4, 4, 4, 0.4472806617934428, -0.509879069709358, 0.6437996182315141, 0.3542391782721052, #atom_id|shapex|shapey|shapez|quatw|quati|quatj|quatk
+16, 4, 4, 4, 0.08505367592830593, -0.8581859984494787, 0.15106597495588397, 0.48317878211587717, #atom_id|shapex|shapey|shapez|quatw|quati|quatj|quatk
+17, 4, 4, 4, 0.4013173949287504, 0.5146107931008317, 0.6974518837176732, -0.2961096925978676, #atom_id|shapex|shapey|shapez|quatw|quati|quatj|quatk
+18, 4, 4, 4, 0.4312148740870053, -0.5084553365517076, 0.32746539222792387, 0.6695471006517987, #atom_id|shapex|shapey|shapez|quatw|quati|quatj|quatk
+19, 4, 4, 4, 0.6114851647407119, -0.3612590415673915, 0.368153307843287, 0.6000341157899939, #atom_id|shapex|shapey|shapez|quatw|quati|quatj|quatk
+20, 4, 4, 4, 0.5741583310644929, 0.3831604067992621, 0.3462780637238784, -0.6353123767992418, #atom_id|shapex|shapey|shapez|quatw|quati|quatj|quatk
+
+PairIJ Coeffs
+
+1 1 lj/cut/dipole/cut 0.01 3.563594872561357 4 20
+

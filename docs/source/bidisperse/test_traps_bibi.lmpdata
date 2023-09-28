@@ -1,6 +1,7 @@
 This is the initial atom setup of bidisperse/test_traps_bibi.lmpdata
 6 atoms 
 4 atom types 
+3 ellipsoids
 3 bonds 
 3 bond types 
 -10.0 10.0 xlo xhi 
@@ -9,12 +10,12 @@ This is the initial atom setup of bidisperse/test_traps_bibi.lmpdata
 
 Atoms
 
-1	 1	 0.0	 2.5	 0.0	 4	 0.0017657440443523084	 0.0	 0	 0	 0	 0	 1 #atom id|type|x0|y0|z0|d|rho|m|mx|my|mz|chi|trap_id
-2	 2	 -2.5	 0.0	 0.0	 2	 0.014125952354818467	 0.0	 0	 0	 0	 0	 2 #atom id|type|x0|y0|z0|d|rho|m|mx|my|mz|chi|trap_id
-3	 2	 0.0	 0.0	 0.0	 2	 0.014125952354818467	 0.0	 0	 0	 0	 0	 3 #atom id|type|x0|y0|z0|d|rho|m|mx|my|mz|chi|trap_id
-4	 3	 -2.5	 0.0	 0.0	 1	 1	 0	 2	 0	 0	 0	 2 #trap id|type|x0|y0|z0|1|1|0|dx|dy|dz|0|atom_id
-5	 3	 0.0	 2.5	 0.0	 1	 1	 0	 0	 2	 0	 0	 1 #trap id|type|x0|y0|z0|1|1|0|dx|dy|dz|0|atom_id
-6	 4	 0	 0	 0	 1	 1	 0	 0	 0	 0	 0	 3 #trap id|type|x0|y0|z0|1|1|0|dx|dy|dz|0|atom_id
+1	 1	 0.0	 2.5	 0.0	 1	 0.0017657440443523084	 0.0	 0	 0	 0	 0	 1 #atom_id|type|x0|y0|z0|e_flag|rho|m|mx|my|mz|chi|trap_id
+2	 2	 -2.5	 0.0	 0.0	 1	 0.014125952354818467	 0.0	 0	 0	 0	 0	 2 #atom_id|type|x0|y0|z0|e_flag|rho|m|mx|my|mz|chi|trap_id
+3	 2	 0.0	 0.0	 0.0	 1	 0.014125952354818467	 0.0	 0	 0	 0	 0	 3 #atom_id|type|x0|y0|z0|e_flag|rho|m|mx|my|mz|chi|trap_id
+4	 3	 -2.5	 0.0	 0.0	 0	 1	 0	 2	 0	 0	 0	 2 #trap id|type|x0|y0|z0|e_flag|null|0|dx|dy|dz|0|atom_id
+5	 3	 0.0	 2.5	 0.0	 0	 1	 0	 0	 2	 0	 0	 1 #trap id|type|x0|y0|z0|e_flag|null|0|dx|dy|dz|0|atom_id
+6	 4	 0	 0	 0	 0	 1	 0	 0	 0	 0	 0	 3 #trap id|type|x0|y0|z0|e_flag|null|0|dx|dy|dz|0|atom_id
 
 Bonds
 
@@ -27,6 +28,12 @@ Bond Coeffs
 1  0.0002999999999999999 0.0
 2  0.0002999999999999999 0.0
 3  0.0002999999999999999 0.0
+
+Ellipsoids
+
+1, 4, 4, 4, 0.023192619474981423, -0.7412644771928851, 0.025647182085876862, 0.6703217878787033, #atom_id|shapex|shapey|shapez|quatw|quati|quatj|quatk
+2, 2, 2, 2, 0.24537915498168777, 0.5951881693304479, 0.7392640638933177, -0.19755697210040343, #atom_id|shapex|shapey|shapez|quatw|quati|quatj|quatk
+3, 2, 2, 2, 0.21349662316310836, -0.7455870587628749, 0.281782388935193, 0.5649051380446549, #atom_id|shapex|shapey|shapez|quatw|quati|quatj|quatk
 
 PairIJ Coeffs
 

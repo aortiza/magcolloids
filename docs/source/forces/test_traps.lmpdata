@@ -1,0 +1,33 @@
+This is the initial atom setup of forces/test_traps.lmpdata
+2 atoms 
+2 atom types 
+1 ellipsoids
+1 bonds 
+1 bond types 
+-10.0 10.0 xlo xhi 
+-10.0 10.0 ylo yhi 
+-2.05 2.05 zlo zhi 
+
+Atoms
+
+1	 1	 -1.5	 0.0	 0.0	 1	 0.0017657440443523084	 0.0	 0	 0	 0	 1	 1 #atom_id|type|x0|y0|z0|e_flag|rho|m|mx|my|mz|chi|trap_id
+2	 2	 0	 0	 0	 0	 1	 0	 1.5	 0.0	 0.0	 0	 1 #trap id|type|x0|y0|z0|e_flag|null|0|dx|dy|dz|0|atom_id
+
+Bonds
+
+1 1 2 1
+
+Bond Coeffs
+
+1  0.0002999999999999999 2.844444444444445e-05
+
+Ellipsoids
+
+1, 4, 4, 4, 0.20919689034856823, 0.5188037708232812, 0.13264411066883722, -0.818220537723728, #atom_id|shapex|shapey|shapez|quatw|quati|quatj|quatk
+
+PairIJ Coeffs
+
+1 1 lj/cut/dipole/cut 0.01 3.563594872561357 4 20
+1 2 none
+2 2 none
+

@@ -1,12 +1,13 @@
 ### ---preamble--- ###
 log bidisperse/test_particles.log
 units micro 
-atom_style hybrid sphere paramagnet bond 
+atom_style hybrid ellipsoid paramagnet bond 
 boundary p p f 
  
-neighbor 4.0 nsq 
+neighbor 4.0 bin 
+neigh_modify every 1 delay 1 check yes
 pair_style hybrid lj/cut/dipole/cut 1 20 
-bond_style biharmonic
+bond_style biharmonic 
 
 ### ---Create Particles and Region--- ###
 read_data bidisperse/test_particles.lmpdata
@@ -14,6 +15,9 @@ group Atoms type 1
 
 group Atoms type 2 
 mass * 1
+group Atoms_1 type 1 
+
+group Atoms_2 type 2 
 
 ### ---Variables--- ###
 
@@ -30,9 +34,9 @@ variable fieldz atom v_Bmag*cos(v_theta)
 ### ---Fixes--- ###
 
 fix 	1 Atoms setdipole v_fieldx v_fieldy v_fieldz 0
-fix 	2 Atoms bd 300 0.001 206744 
+fix 	2 Atoms bd 300 0.001 198304 
 
-fix     3 Atoms addforce 0 0 -0.0 
+fix 	3 Atoms addforce 0 0 -0.0 
 fix 	6 Atoms wall/lj126 zlo EDGE 0.01 1.7817974362806785  2 zhi EDGE 0.01 1.7817974362806785  2  
 
 ### ---Run Commands--- ###

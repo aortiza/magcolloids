@@ -1,6 +1,7 @@
 This is the initial atom setup of bidisperse/test_particles.lmpdata
 7 atoms 
 2 atom types 
+7 ellipsoids
 0 bonds 
 0 bond types 
 -10.0 10.0 xlo xhi 
@@ -9,13 +10,23 @@ This is the initial atom setup of bidisperse/test_particles.lmpdata
 
 Atoms
 
-1	 1	 -5	 0	 0	 4	 0.0017657440443523084	 0.0	 0	 0	 0	 1	 1 #atom id|type|x0|y0|z0|d|rho|m|mx|my|mz|chi|trap_id
-2	 1	 0	 5	 0	 4	 0.0017657440443523084	 0.0	 0	 0	 0	 1	 2 #atom id|type|x0|y0|z0|d|rho|m|mx|my|mz|chi|trap_id
-3	 1	 5	 0	 0	 4	 0.0017657440443523084	 0.0	 0	 0	 0	 1	 3 #atom id|type|x0|y0|z0|d|rho|m|mx|my|mz|chi|trap_id
-4	 2	 -5	 -3	 0	 2	 0.014125952354818467	 0.0	 0	 0	 0	 1	 4 #atom id|type|x0|y0|z0|d|rho|m|mx|my|mz|chi|trap_id
-5	 2	 0	 -3	 0	 2	 0.014125952354818467	 0.0	 0	 0	 0	 1	 5 #atom id|type|x0|y0|z0|d|rho|m|mx|my|mz|chi|trap_id
-6	 2	 5	 -3	 0	 2	 0.014125952354818467	 0.0	 0	 0	 0	 1	 6 #atom id|type|x0|y0|z0|d|rho|m|mx|my|mz|chi|trap_id
-7	 2	 5	 5	 0	 2	 0.014125952354818467	 0.0	 0	 0	 0	 1	 7 #atom id|type|x0|y0|z0|d|rho|m|mx|my|mz|chi|trap_id
+1	 1	 -5	 0	 0	 1	 0.0017657440443523084	 0.0	 0	 0	 0	 1	 1 #atom_id|type|x0|y0|z0|e_flag|rho|m|mx|my|mz|chi|trap_id
+2	 1	 0	 5	 0	 1	 0.0017657440443523084	 0.0	 0	 0	 0	 1	 2 #atom_id|type|x0|y0|z0|e_flag|rho|m|mx|my|mz|chi|trap_id
+3	 1	 5	 0	 0	 1	 0.0017657440443523084	 0.0	 0	 0	 0	 1	 3 #atom_id|type|x0|y0|z0|e_flag|rho|m|mx|my|mz|chi|trap_id
+4	 2	 -5	 -3	 0	 1	 0.014125952354818467	 0.0	 0	 0	 0	 1	 4 #atom_id|type|x0|y0|z0|e_flag|rho|m|mx|my|mz|chi|trap_id
+5	 2	 0	 -3	 0	 1	 0.014125952354818467	 0.0	 0	 0	 0	 1	 5 #atom_id|type|x0|y0|z0|e_flag|rho|m|mx|my|mz|chi|trap_id
+6	 2	 5	 -3	 0	 1	 0.014125952354818467	 0.0	 0	 0	 0	 1	 6 #atom_id|type|x0|y0|z0|e_flag|rho|m|mx|my|mz|chi|trap_id
+7	 2	 5	 5	 0	 1	 0.014125952354818467	 0.0	 0	 0	 0	 1	 7 #atom_id|type|x0|y0|z0|e_flag|rho|m|mx|my|mz|chi|trap_id
+
+Ellipsoids
+
+1, 4, 4, 4, 0.5654979394523346, 0.42857303548976483, 0.5496572877053876, -0.440924142907382, #atom_id|shapex|shapey|shapez|quatw|quati|quatj|quatk
+2, 4, 4, 4, 0.09505608121680537, -0.6758318815830054, 0.08854639703735577, 0.725517156813939, #atom_id|shapex|shapey|shapez|quatw|quati|quatj|quatk
+3, 4, 4, 4, 0.40903956260997393, 0.5797169197623496, 0.41789614876390324, -0.5674308222236367, #atom_id|shapex|shapey|shapez|quatw|quati|quatj|quatk
+4, 2, 2, 2, 0.17012415206612705, -0.28911728470223536, 0.05229179375830314, 0.9406032834706282, #atom_id|shapex|shapey|shapez|quatw|quati|quatj|quatk
+5, 2, 2, 2, 0.5057973641105306, 0.39422814273471324, 0.714796945092393, -0.27895971971121675, #atom_id|shapex|shapey|shapez|quatw|quati|quatj|quatk
+6, 2, 2, 2, 0.6576935693585372, -0.2259778769082004, 0.6850586938198578, 0.21695104054675426, #atom_id|shapex|shapey|shapez|quatw|quati|quatj|quatk
+7, 2, 2, 2, 0.25927617087954397, -0.7255752561339902, 0.35561341227029786, 0.5290137199672719, #atom_id|shapex|shapey|shapez|quatw|quati|quatj|quatk
 
 PairIJ Coeffs
 

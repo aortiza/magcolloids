@@ -1,0 +1,79 @@
+### ---preamble--- ###
+log ./ring_trap_test_ring_2.log
+units micro 
+atom_style hybrid ellipsoid paramagnet bond 
+boundary f f f 
+ 
+neighbor 4.0 bin 
+neigh_modify every 1 delay 1 check yes
+pair_style hybrid lj/cut/dipole/cut 1 20 
+bond_style biharmonic 
+
+### ---Create Particles and Region--- ###
+read_data ./ring_trap_test_ring_2.lmpdata
+group Atoms type 1 
+mass * 1
+group Atoms_1 type 1 
+
+### ---Variables--- ###
+
+## magnetic field
+variable Bmag atom 0.0
+variable freq atom 9.999999999999999e-06
+variable theta atom 0.2617993877991494
+variable phi atom 0.0
+
+variable fieldx atom v_Bmag*cos(v_freq*time*2*PI+v_phi)*sin(v_theta)
+variable fieldy atom v_Bmag*sin(v_freq*time*2*PI+v_phi)*sin(v_theta)
+variable fieldz atom v_Bmag*cos(v_theta)
+
+## external force
+
+# Remember that time is in microsecond
+# Force is in pg*um/us^2
+# k should be in pg/us^2
+# r, cx and cy are in um
+
+variable k atom 1e-3
+variable cutoff atom 1
+
+variable R1 atom 50
+variable R2 atom 2
+
+variable cx1 atom 0
+variable cy1 atom 0
+
+variable cx2 atom 54
+variable cy2 atom 0
+
+variable rho1 atom sqrt((x-v_cx1)^2+(y-v_cy1)^2)
+variable ex1 atom (x-v_cx1)/v_rho1
+variable ey1 atom (y-v_cy1)/v_rho1
+
+variable dr1 atom v_rho1-v_R1
+
+variable rho2 atom sqrt((x-v_cx2)^2+(y-v_cy2)^2)
+variable ex2 atom (x-v_cx2)/v_rho2
+variable ey2 atom (y-v_cy2)/v_rho2
+
+variable dr2 atom v_rho2-v_R2
+
+variable Fx atom -v_k*v_dr1*v_ex1*(v_dr1<v_cutoff)-v_k*v_dr2*v_ex2*(v_dr2<v_cutoff)
+variable Fy atom -v_k*v_dr1*v_ey1*(v_dr1<v_cutoff)-v_k*v_dr2*v_ey2*(v_dr2<v_cutoff)
+variable Fz atom 0
+
+
+### ---Fixes--- ###
+
+fix 	1 Atoms setdipole v_fieldx v_fieldy v_fieldz 0
+fix 	2 Atoms bd 300 0.001 567112 
+
+fix 	3 Atoms addforce 0 0 -0.00032840115205525297 
+fix 	6 Atoms wall/lj126 zlo EDGE 0.01 1.7817974362806785  2 zhi EDGE 0.01 1.7817974362806785  2  
+fix		8 Atoms addforce v_Fx v_Fy v_Fz
+### ---Run Commands--- ###
+timestep 	100.0 
+dump 	3 all custom 333 ./ring_trap_test_ring_2.lammpstrj id type x	 y	 z
+thermo_style 	custom step atoms
+thermo 	100  
+run 	6000000 
