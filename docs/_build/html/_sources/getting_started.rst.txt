@@ -11,9 +11,11 @@ Walkthrough
    
    Walkthrough
       
+   ForcesOfTheSimulation
+   
    CircleTrapsScript
    
    BidisperseSimulations
-
-to do: 
-There is nothing explaining how regular traps work
+   
+   ParallelSimulation
+	 
