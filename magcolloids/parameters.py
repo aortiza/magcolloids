@@ -158,11 +158,10 @@ class bistable_trap():
         self.cutoff = cutoff
         self.velocity = velocity
 
-        # This is provisional,
-        # ideally, the height should be input to lammps as pN nm,
-        # and from that a negative stiffness calculated.
-        # 
-        # self.height = self.height*8/(self.distance**2)
+        if distance > 0:
+            self.k_hill = self.height*8/(self.distance**2)
+        else:
+            self.k_hill = 0*ureg("pN/nm")
 
 
     def bond_to_particles(self):
@@ -230,13 +229,15 @@ class bistable_trap():
                     atom_ix = j) for b,i,j in zip(self.bonds_id,self.traps_id,self.bonds)]
             )+"\n"
             # The bond params are defined by bond type. These determine the stiffness and height of the traps
-            height_disorder = self.height *(np.random.randn(len(self.traps_id))*self.height_spread+1)
-            height_disorder = height_disorder.to(ureg.pg*ureg.um**2/ureg.us**2).magnitude
+
+
+            k_hill_disorder = self.k_hill * (np.random.randn(len(self.traps_id))*self.height_spread+1)
+            k_hill_disorder = k_hill_disorder.to(ureg.pg/ureg.us**2).magnitude
 
             self.bond_params = "\n".join([st.Template(
-                """$bond_type  $stiffness $height_energy""").substitute(
-                        bond_type = i, stiffness = self.stiffness.magnitude, height_energy = h
-                    ) for i,h in zip(self.bonds_id,height_disorder)])+"\n"
+                """$bond_type  $stiffness $central_stiffness""").substitute(
+                        bond_type = i, stiffness = self.stiffness.magnitude, central_stiffness = k_h
+                    ) for i,k_h in zip(self.bonds_id, k_hill_disorder)])+"\n"
             # If there is no cuttoff, the trap doesn't have a pair interaction.
 
         else:

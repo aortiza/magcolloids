@@ -301,7 +301,7 @@ class sim():
             trj = self.lazy_read[sl]
             trj['t']=trj.index.get_level_values('frame')*self.timestep.to(ureg.s).magnitude
             frames = trj.index.get_level_values('frame').unique()
-            trj.index.set_levels(range(len(frames)), level = "frame", inplace=True)
+            trj.index = trj.index.set_levels(range(len(frames)), level = "frame")
             return trj
 
 #from collections import Sequence
@@ -351,7 +351,7 @@ class trj_lazyread():
 
                         line = d.readline()
                         pbar.update(len(line))
-                        
+
                         bounds["z"] = np.array([float(i) for i in line.split(' ') if i!='\n'])
 
                         item["bounds"] = bounds
